@@ -40,6 +40,9 @@ func (t RadixTree) Get(key string) (val string, err error) {
 		case *inode:
 			fmt.Printf("Going down inode %v\n", x)
 			i = x.critbyte
+			if i >= len(key) {
+				return "", errors.New("Not found")
+			}
 			if key[i]&x.critmask == 0 {
 				n = x.lc
 			} else {
