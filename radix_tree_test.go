@@ -74,3 +74,26 @@ func TestSetAndGetSubstrings(t *testing.T) {
 		t.Errorf("Want ok == nil, val == \"barc\". Got ok == %v, val == %v", ok, val)
 	}
 }
+
+func TestSetAndGetExhaustive(t *testing.T) {
+	var b [3]byte
+	r := RadixTree{}
+	keys := make([]string, 0)
+	for i := 97; i < 123; i++ {
+		for j := 97; j < 123; j++ {
+			for k := 97; k < 123; k++ {
+				b[0], b[1], b[2] = byte(i), byte(j), byte(k)
+				key := string(b[:])
+				keys = append(keys, key)
+			}
+		}
+	}
+	for _, key := range keys {
+		r.Set(key, key)
+	}
+	for _, key := range keys {
+		if val, ok := r.Get(key); ok != nil || val != key {
+			t.Errorf("Want ok == nil, val == \"%v\". Got ok == %v, val == %v", key, ok, val)
+		}
+	}
+}
