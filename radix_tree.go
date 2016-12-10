@@ -71,8 +71,10 @@ func (t RadixTree) Get(key string) (val string, err error) {
 				n = x.rc
 			}
 		case *tnode:
-			j := firstDifferingIndex(key, x.key, i)
-			if j < len(key) || len(key) != len(x.key) {
+			if len(key) != len(x.key) {
+				return "", errors.New("Not found")
+			}
+			if firstDifferingIndex(key, x.key, i) < len(key) {
 				return "", errors.New("Not found")
 			}
 			return x.val, nil
