@@ -29,7 +29,6 @@ func TestGetUnsuccessful(t *testing.T) {
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
-	r.DumpContents()
 	if _, ok := r.Get("foo"); ok == nil {
 		t.Error("Want ok != nil, got ok == nil")
 	}
@@ -49,15 +48,29 @@ func TestSetAndGetCommonPrefix(t *testing.T) {
 	if _, ok := r.Get("foo"); ok == nil {
 		t.Error("Want ok != nil, got ok == nil")
 	}
-	val, ok := r.Get("fooey")
-	if ok != nil {
-		t.Errorf("Want ok == nil, got ok = %v", ok)
+	if val, ok := r.Get("fooey"); ok != nil || val != "bara" {
+		t.Errorf("Want ok == nil, val == \"bara\". Got ok == %v, val == %v", ok, val)
 	}
-	if val != "bara" {
-		t.Errorf("Want val == 'bara', got val = %v", val)
+	if val, ok := r.Get("fooing"); ok != nil || val != "barb" {
+		t.Errorf("Want ok == nil, val == \"barb\". Got ok == %v, val == %v", ok, val)
+	}
+	if val, ok := r.Get("foozle"); ok != nil || val != "barc" {
+		t.Errorf("Want ok == nil, val == \"barc\". Got ok == %v, val == %v", ok, val)
 	}
 }
 
 func TestSetAndGetSubstrings(t *testing.T) {
-
+	r := RadixTree{}
+	r.Set("fooingly", "bara")
+	r.Set("fooing", "barb")
+	r.Set("foo", "barc")
+	if val, ok := r.Get("fooingly"); ok != nil || val != "bara" {
+		t.Errorf("Want ok == nil, val == \"bara\". Got ok == %v, val == %v", ok, val)
+	}
+	if val, ok := r.Get("fooing"); ok != nil || val != "barb" {
+		t.Errorf("Want ok == nil, val == \"barb\". Got ok == %v, val == %v", ok, val)
+	}
+	if val, ok := r.Get("foo"); ok != nil || val != "barc" {
+		t.Errorf("Want ok == nil, val == \"barc\". Got ok == %v, val == %v", ok, val)
+	}
 }

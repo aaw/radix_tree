@@ -14,8 +14,8 @@ type node interface {
 }
 
 type inode struct {
-	lc       node
-	rc       node
+	lc       node // lc === critbit 0
+	rc       node // rc === critbit 1
 	critbyte int
 	critmask uint8
 }
@@ -28,41 +28,6 @@ type tnode struct {
 func (n tnode) isTerminal() bool { return true }
 func (n inode) isTerminal() bool { return false }
 
-func (t RadixTree) Get(key string) (val string, err error) {
-	n := t.root
-	var i int
-	if n == nil {
-		return "", errors.New("Not found")
-	}
-	for {
-		fmt.Printf("loop: %T", n)
-		switch x := n.(type) {
-		case *inode:
-			fmt.Printf("Going down inode %v\n", x)
-			i = x.critbyte
-			if i >= len(key) {
-				return "", errors.New("Not found")
-			}
-			if key[i]&x.critmask == 0 {
-				n = x.lc
-			} else {
-				n = x.rc
-			}
-		case *tnode:
-			fmt.Printf("Going down tnode %v\n", x)
-			if len(key) != len(x.key) {
-				return "", errors.New("Not found")
-			}
-			for j := int(i); j < len(key); j++ {
-				if x.key[j] != key[j] {
-					return "", errors.New("Not found")
-				}
-			}
-			return x.val, nil
-		}
-	}
-}
-
 func msb_mask(b byte) byte {
 	b |= b >> 1
 	b |= b >> 2
@@ -70,50 +35,98 @@ func msb_mask(b byte) byte {
 	return b & ^(b >> 1)
 }
 
+func firstDifferingIndex(s string, t string, i int) int {
+	minLen, tl := len(s), len(t)
+	if tl < minLen {
+		minLen = tl
+	}
+	for j := i; j < minLen; j++ {
+		if s[j] != t[j] {
+			return j
+		}
+	}
+	return minLen
+}
+
+func getItemOrZero(s string, i int) byte {
+	if i < len(s) {
+		return s[i]
+	}
+	return 0
+}
+
+func (t RadixTree) Get(key string) (val string, err error) {
+	n := t.root
+	var i int
+	if n == nil {
+		return "", errors.New("Not found")
+	}
+	for {
+		switch x := n.(type) {
+		case *inode:
+			i = x.critbyte
+			if getItemOrZero(key, i)&x.critmask == 0 {
+				n = x.lc
+			} else {
+				n = x.rc
+			}
+		case *tnode:
+			j := firstDifferingIndex(key, x.key, i)
+			if j < len(key) || len(key) != len(x.key) {
+				return "", errors.New("Not found")
+			}
+			return x.val, nil
+		}
+	}
+}
+
 func (t *RadixTree) Set(key string, val string) {
 	n := &t.root
+	kl := len(key)
 	var i int
 	for {
 		if *n == nil {
-			fmt.Println("Setting from nil")
 			*n = &tnode{key: key, val: val}
 			return
 		} else {
 			switch x := (*n).(type) {
 			case *inode:
-				fmt.Printf("Going down inode %v\n", x)
 				i = x.critbyte
-				if i >= len(key) {
-					// what do
-				}
-				if key[i]&x.critmask == 0 {
+				if i >= kl {
+					// Some internal node already discriminates at a byte index i
+					// that's greater than len(key). Insert a new internal node here
+					// that discriminates on byte index len(key) instead. To do that,
+					// we have to walk down the tree and find a terminal node so that
+					// we know the first bit set in the len(key)-th byte (which is
+					// the same for any string in this subtree, since they are all
+					// equal up to byte i and i > len(key).
+					t := x.lc
+					for !t.isTerminal() {
+						t = t.(inode).lc
+					}
+					mask := msb_mask(t.(*tnode).key[len(key)])
+					in := inode{lc: nil, rc: *n, critbyte: len(key), critmask: mask}
+					*n = &in
+					n = &in.lc
+				} else if key[i]&x.critmask == 0 {
 					n = &x.lc
 				} else {
 					n = &x.rc
 				}
 			case *tnode:
-				fmt.Printf("Going down tnode %v\n", x)
-				equal := true
-				j := i
-				// TODO: figure out how to treat case where one string is
-				// a prefix of another. Always branch right on longer string?
-				minLen := len(key)
-				if len(x.key) > minLen {
-					minLen = len(x.key)
-				}
-				for ; equal && j < minLen; j++ {
-					if x.key[j] != key[j] {
-						equal = false
-					}
-				}
-				if equal {
+				j := firstDifferingIndex(key, x.key, i)
+				if kl == len(x.key) && kl == j {
+					// We're at a terminal node with the same key that we're
+					// trying to insert, so just overwrite the value.
 					x.val = val
 					return
 				} else {
-					mask := msb_mask(x.key[j] ^ key[j])
+					kb := getItemOrZero(key, j)
+					xb := getItemOrZero(x.key, j)
+					mask := msb_mask(kb ^ xb)
 					in := inode{lc: nil, rc: nil, critbyte: j, critmask: mask}
 					*n = &in
-					if mask&key[j] == 0 {
+					if mask&kb == 0 {
 						in.rc = x
 						n = &in.lc
 					} else {
@@ -131,6 +144,7 @@ func (t RadixTree) DumpContents() {
 }
 
 func dumpContents(n node, indent int) {
+	fmt.Printf("[%v]\n", n)
 	switch x := n.(type) {
 	case *inode:
 		dumpContents(x.lc, indent+2)
