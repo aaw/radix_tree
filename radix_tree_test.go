@@ -1,8 +1,16 @@
 package radix_tree
 
 import (
+	"fmt"
 	"testing"
 )
+
+// TODO: replace most assertions below with expectGet
+func expectGet(t *testing.T, r RadixTree, key string, val string) {
+	if aval, ok := r.Get(key); ok != nil || aval != val {
+		t.Errorf("Want ok == nil, val == \"%v\". Got ok == %v, val == %v", val, ok, aval)
+	}
+}
 
 func TestGetEmpty(t *testing.T) {
 	r := RadixTree{}
@@ -75,19 +83,41 @@ func TestSetAndGetSubstrings(t *testing.T) {
 	}
 }
 
+func TestFooBar(t *testing.T) {
+	r := RadixTree{}
+	fmt.Printf("Setting cb: z\n")
+	r.Set("cb", "z")
+	r.DumpContents()
+	fmt.Println("")
+	fmt.Printf("Setting ca: zz\n")
+	r.Set("ca", "zz")
+	r.DumpContents()
+	fmt.Println("")
+	fmt.Printf("Setting bb: y\n")
+	r.Set("bb", "y")
+	r.DumpContents()
+	fmt.Println("")
+	fmt.Printf("Setting ab: x\n")
+	r.Set("ab", "x")
+	r.DumpContents()
+	expectGet(t, r, "bb", "y")
+}
+
 func TestSetAndGetExhaustive(t *testing.T) {
-	var b [3]byte
+	//var b [3]byte
+	var b [2]byte
 	r := RadixTree{}
 	keys := make([]string, 0)
-	for i := 97; i < 123; i++ {
-		for j := 97; j < 123; j++ {
-			for k := 97; k < 123; k++ {
-				b[0], b[1], b[2] = byte(i), byte(j), byte(k)
-				key := string(b[:])
-				keys = append(keys, key)
-			}
+	//for i := 97; i < 123; i++ {
+	for j := 97; j < 123; j++ {
+		for k := 97; k < 123; k++ {
+			//b[0], b[1], b[2] = byte(i), byte(j), byte(k)
+			b[0], b[1] = byte(j), byte(k)
+			key := string(b[:])
+			keys = append(keys, key)
 		}
 	}
+	//}
 	for _, key := range keys {
 		r.Set(key, key)
 	}

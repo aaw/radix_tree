@@ -71,13 +71,82 @@ func (t RadixTree) Get(key string) (val string, err error) {
 				n = x.rc
 			}
 		case *tnode:
-			if len(key) != len(x.key) {
-				return "", errors.New("Not found")
-			}
-			if firstDifferingIndex(key, x.key, i) < len(key) {
+			if len(key) != len(x.key) || firstDifferingIndex(key, x.key, i) < len(key) {
 				return "", errors.New("Not found")
 			}
 			return x.val, nil
+			// TODO: return not found in default case instead of n == nil block above?
+		}
+	}
+}
+
+// In a RadixTree t with t.root != nil, get the ...
+func (t RadixTree) get(key string) string {
+	n := t.root
+	for {
+		switch x := n.(type) {
+		case *inode:
+			if getItemOrZero(key, x.critbyte)&x.critmask == 0 {
+				n = x.lc
+			} else {
+				n = x.rc
+			}
+		case *tnode:
+			return x.val
+		}
+	}
+}
+
+func (t RadixTree) set(key string, val string, critbyte int, critmask byte) {
+	n := &t.root
+	for {
+		if *n == nil {
+			*n = &tnode{key: key, val: val}
+			return
+		}
+		switch x := (*n).(type) {
+		case *inode:
+			if x.critbyte >= critbyte {
+				// An internal node already discriminates at a byte index
+				// that's greater than critbyte. Insert a new internal node here
+				// that discriminates on byte index critbyte instead. To do that,
+				// we have to walk down the tree and find a terminal node so that
+				// we know the first bit set in the len(key)-th byte (which is
+				// the same for any string in this subtree, since they are all
+				// equal up to byte i and i > len(key).
+				fmt.Printf("Replacing internal node %v\n", x)
+				if critmask&key[critbyte] == 0 {
+					i := inode{lc: nil, rc: *n, critbyte: critbyte, critmask: critmask}
+					*n = &i
+					n = &i.lc
+				} else {
+					i := inode{lc: *n, rc: nil, critbyte: critbyte, critmask: critmask}
+					*n = &i
+					n = &i.rc
+				}
+			} else if key[x.critbyte]&x.critmask == 0 {
+				n = &x.lc
+			} else {
+				n = &x.rc
+			}
+		case *tnode:
+			if len(x.key) == critbyte && len(key) == critbyte {
+				// We're at a terminal node with the same key that we're
+				// trying to insert, so just overwrite the value.
+				fmt.Printf("Replacing %v's value with %v (was %v)\n", x.key, val, x.val)
+				x.val = val
+				return
+			} else {
+				in := inode{lc: nil, rc: nil, critbyte: critbyte, critmask: critmask}
+				*n = &in
+				if critmask&key[critbyte] == 0 {
+					in.rc = x
+					n = &in.lc
+				} else {
+					in.lc = x
+					n = &in.rc
+				}
+			}
 		}
 	}
 }
@@ -95,13 +164,14 @@ func (t *RadixTree) Set(key string, val string) {
 			case *inode:
 				i = x.critbyte
 				if i >= kl {
-					// Some internal node already discriminates at a byte index i
+					// An internal node already discriminates at a byte index i
 					// that's greater than len(key). Insert a new internal node here
 					// that discriminates on byte index len(key) instead. To do that,
 					// we have to walk down the tree and find a terminal node so that
 					// we know the first bit set in the len(key)-th byte (which is
 					// the same for any string in this subtree, since they are all
 					// equal up to byte i and i > len(key).
+					fmt.Printf("Replacing internal node %v\n", x)
 					t := x.lc
 					for !t.isTerminal() {
 						t = t.(inode).lc
@@ -120,6 +190,7 @@ func (t *RadixTree) Set(key string, val string) {
 				if kl == len(x.key) && kl == j {
 					// We're at a terminal node with the same key that we're
 					// trying to insert, so just overwrite the value.
+					fmt.Printf("Replacing %v with %v\n", x.key, key)
 					x.val = val
 					return
 				} else {
