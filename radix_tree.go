@@ -28,21 +28,21 @@ type tnode struct {
 func (n tnode) isTerminal() bool { return true }
 func (n inode) isTerminal() bool { return false }
 
-func msb_mask(b byte) byte {
+func msbMask(b byte) byte {
 	b |= b >> 1
 	b |= b >> 2
 	b |= b >> 4
 	return b & ^(b >> 1)
 }
 
-func firstDifferingIndex(s string, t string, i int) int {
+func firstDifferingIndex(s string, t string) int {
 	minLen, tl := len(s), len(t)
 	if tl < minLen {
 		minLen = tl
 	}
-	for j := i; j < minLen; j++ {
-		if s[j] != t[j] {
-			return j
+	for i := 0; i < minLen; i++ {
+		if s[i] != t[i] {
+			return i
 		}
 	}
 	return minLen
@@ -55,33 +55,32 @@ func getItemOrZero(s string, i int) byte {
 	return 0
 }
 
-func (t RadixTree) Get(key string) (val string, err error) {
-	n := t.root
-	var i int
-	if n == nil {
+func (t RadixTree) Get(key string) (string, error) {
+	k, v := t.get(key)
+	if k == key {
+		return v, nil
+	} else {
 		return "", errors.New("Not found")
-	}
-	for {
-		switch x := n.(type) {
-		case *inode:
-			i = x.critbyte
-			if getItemOrZero(key, i)&x.critmask == 0 {
-				n = x.lc
-			} else {
-				n = x.rc
-			}
-		case *tnode:
-			if len(key) != len(x.key) || firstDifferingIndex(key, x.key, i) < len(key) {
-				return "", errors.New("Not found")
-			}
-			return x.val, nil
-			// TODO: return not found in default case instead of n == nil block above?
-		}
 	}
 }
 
+func (t *RadixTree) Set(key string, val string) {
+	k, _ := t.get(key)
+	fmt.Printf("** key is [% x]\n", key)
+	fmt.Printf("** k is [% x]\n", k)
+	i := firstDifferingIndex(k, key)
+	fmt.Printf("** fdi is [%v]\n", i)
+	fmt.Printf("** gioz(key,%v) = % X, gioz(k,%v) = % X\n", i, getItemOrZero(key, i), i, getItemOrZero(k, i))
+	mask := msbMask(getItemOrZero(key, i) ^ getItemOrZero(k, i))
+	fmt.Printf("** mask is [%x]. mask & k = %x, mask & key = %v\n", mask, mask&getItemOrZero(k, i), mask&getItemOrZero(key, i))
+	t.set(key, val, i, mask)
+}
+
 // In a RadixTree t with t.root != nil, get the ...
-func (t RadixTree) get(key string) string {
+func (t RadixTree) get(key string) (string, string) {
+	if t.root == nil {
+		return "", ""
+	}
 	n := t.root
 	for {
 		switch x := n.(type) {
@@ -92,15 +91,16 @@ func (t RadixTree) get(key string) string {
 				n = x.rc
 			}
 		case *tnode:
-			return x.val
+			return x.key, x.val
 		}
 	}
 }
 
-func (t RadixTree) set(key string, val string, critbyte int, critmask byte) {
+func (t *RadixTree) set(key string, val string, critbyte int, critmask byte) {
 	n := &t.root
 	for {
 		if *n == nil {
+			fmt.Printf("setting %v = %v\n", key, val)
 			*n = &tnode{key: key, val: val}
 			return
 		}
@@ -145,67 +145,6 @@ func (t RadixTree) set(key string, val string, critbyte int, critmask byte) {
 				} else {
 					in.lc = x
 					n = &in.rc
-				}
-			}
-		}
-	}
-}
-
-func (t *RadixTree) Set(key string, val string) {
-	n := &t.root
-	kl := len(key)
-	var i int
-	for {
-		if *n == nil {
-			*n = &tnode{key: key, val: val}
-			return
-		} else {
-			switch x := (*n).(type) {
-			case *inode:
-				i = x.critbyte
-				if i >= kl {
-					// An internal node already discriminates at a byte index i
-					// that's greater than len(key). Insert a new internal node here
-					// that discriminates on byte index len(key) instead. To do that,
-					// we have to walk down the tree and find a terminal node so that
-					// we know the first bit set in the len(key)-th byte (which is
-					// the same for any string in this subtree, since they are all
-					// equal up to byte i and i > len(key).
-					fmt.Printf("Replacing internal node %v\n", x)
-					t := x.lc
-					for !t.isTerminal() {
-						t = t.(inode).lc
-					}
-					mask := msb_mask(t.(*tnode).key[len(key)])
-					in := inode{lc: nil, rc: *n, critbyte: len(key), critmask: mask}
-					*n = &in
-					n = &in.lc
-				} else if key[i]&x.critmask == 0 {
-					n = &x.lc
-				} else {
-					n = &x.rc
-				}
-			case *tnode:
-				j := firstDifferingIndex(key, x.key, i)
-				if kl == len(x.key) && kl == j {
-					// We're at a terminal node with the same key that we're
-					// trying to insert, so just overwrite the value.
-					fmt.Printf("Replacing %v with %v\n", x.key, key)
-					x.val = val
-					return
-				} else {
-					kb := getItemOrZero(key, j)
-					xb := getItemOrZero(x.key, j)
-					mask := msb_mask(kb ^ xb)
-					in := inode{lc: nil, rc: nil, critbyte: j, critmask: mask}
-					*n = &in
-					if mask&kb == 0 {
-						in.rc = x
-						n = &in.lc
-					} else {
-						in.lc = x
-						n = &in.rc
-					}
 				}
 			}
 		}
