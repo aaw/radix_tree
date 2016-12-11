@@ -42,18 +42,12 @@ func TestSetAndGetCommonPrefix(t *testing.T) {
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
-	if _, ok := r.Get("foo"); ok == nil {
-		t.Error("Want ok != nil, got ok == nil")
+	if _, err := r.Get("foo"); err == nil {
+		t.Errorf("Want err != nil, got err == %v\n", err)
 	}
-	if val, ok := r.Get("fooey"); ok != nil || val != "bara" {
-		t.Errorf("Want ok == nil, val == \"bara\". Got ok == %v, val == %v", ok, val)
-	}
-	if val, ok := r.Get("fooing"); ok != nil || val != "barb" {
-		t.Errorf("Want ok == nil, val == \"barb\". Got ok == %v, val == %v", ok, val)
-	}
-	if val, ok := r.Get("foozle"); ok != nil || val != "barc" {
-		t.Errorf("Want ok == nil, val == \"barc\". Got ok == %v, val == %v", ok, val)
-	}
+	expectGet(t, r, "fooey", "bara")
+	expectGet(t, r, "fooing", "barb")
+	expectGet(t, r, "foozle", "barc")
 }
 
 func TestSetAndGetSubstrings(t *testing.T) {
@@ -61,15 +55,9 @@ func TestSetAndGetSubstrings(t *testing.T) {
 	r.Set("fooingly", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foo", "barc")
-	if val, ok := r.Get("fooingly"); ok != nil || val != "bara" {
-		t.Errorf("Want ok == nil, val == \"bara\". Got ok == %v, val == %v", ok, val)
-	}
-	if val, ok := r.Get("fooing"); ok != nil || val != "barb" {
-		t.Errorf("Want ok == nil, val == \"barb\". Got ok == %v, val == %v", ok, val)
-	}
-	if val, ok := r.Get("foo"); ok != nil || val != "barc" {
-		t.Errorf("Want ok == nil, val == \"barc\". Got ok == %v, val == %v", ok, val)
-	}
+	expectGet(t, r, "fooingly", "bara")
+	expectGet(t, r, "fooing", "barb")
+	expectGet(t, r, "foo", "barc")
 }
 
 func TestFooBar(t *testing.T) {
@@ -110,9 +98,8 @@ func TestSetAndGetExhaustive(t *testing.T) {
 	for _, key := range keys {
 		r.Set(key, key)
 	}
+	r.DumpContents()
 	for _, key := range keys {
-		if val, ok := r.Get(key); ok != nil || val != key {
-			t.Errorf("Want ok == nil, val == \"%v\". Got ok == %v, val == %v", key, ok, val)
-		}
+		expectGet(t, r, key, key)
 	}
 }

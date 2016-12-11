@@ -57,6 +57,7 @@ func getItemOrZero(s string, i int) byte {
 
 func (t RadixTree) Get(key string) (string, error) {
 	k, v := t.get(key)
+	fmt.Printf("[Get(%v)] -> (%v, %v)\n", key, k, v)
 	if k == key {
 		return v, nil
 	} else {
@@ -65,15 +66,18 @@ func (t RadixTree) Get(key string) (string, error) {
 }
 
 func (t *RadixTree) Set(key string, val string) {
+	fmt.Printf("[Set(%v, %v)]\n", key, val)
 	k, _ := t.get(key)
 	fmt.Printf("** key is [% x]\n", key)
 	fmt.Printf("** k is [% x]\n", k)
 	i := firstDifferingIndex(k, key)
 	fmt.Printf("** fdi is [%v]\n", i)
 	fmt.Printf("** gioz(key,%v) = % X, gioz(k,%v) = % X\n", i, getItemOrZero(key, i), i, getItemOrZero(k, i))
-	mask := msbMask(getItemOrZero(key, i) ^ getItemOrZero(k, i))
-	fmt.Printf("** mask is [%x]. mask & k = %x, mask & key = %v\n", mask, mask&getItemOrZero(k, i), mask&getItemOrZero(key, i))
-	t.set(key, val, i, mask)
+	keyByte := getItemOrZero(key, i)
+	kByte := getItemOrZero(k, i)
+	mask := msbMask(keyByte ^ kByte)
+	fmt.Printf("** mask is [%x]. mask & k = %x, mask & key = %v\n", mask, kByte&mask, keyByte&mask)
+	t.set(key, val, i, mask, keyByte)
 }
 
 // In a RadixTree t with t.root != nil, get the ...
@@ -96,7 +100,7 @@ func (t RadixTree) get(key string) (string, string) {
 	}
 }
 
-func (t *RadixTree) set(key string, val string, critbyte int, critmask byte) {
+func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, keyByte byte) {
 	n := &t.root
 	for {
 		if *n == nil {
@@ -115,7 +119,7 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte) {
 				// the same for any string in this subtree, since they are all
 				// equal up to byte i and i > len(key).
 				fmt.Printf("Replacing internal node %v\n", x)
-				if critmask&key[critbyte] == 0 {
+				if critmask&keyByte == 0 {
 					i := inode{lc: nil, rc: *n, critbyte: critbyte, critmask: critmask}
 					*n = &i
 					n = &i.lc
@@ -139,7 +143,7 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte) {
 			} else {
 				in := inode{lc: nil, rc: nil, critbyte: critbyte, critmask: critmask}
 				*n = &in
-				if critmask&key[critbyte] == 0 {
+				if critmask&keyByte == 0 {
 					in.rc = x
 					n = &in.lc
 				} else {
