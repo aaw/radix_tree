@@ -1,6 +1,7 @@
 package radix_tree
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -57,7 +58,39 @@ func TestSetAndGetSubstrings(t *testing.T) {
 	expectGet(t, r, "foo", "barc")
 }
 
-func TestSetAndGetExhaustive(t *testing.T) {
+func TestSetAndGetMixedOrder(t *testing.T) {
+	rand.Seed(0)
+	data := []string{
+		"foo",
+		"fooa",
+		"foob",
+		"fooc",
+		"fooY",
+		"fooZ",
+		"fooaa",
+		"fooab",
+		"fooaaa",
+		"fooaaZ",
+		"fooaaaa",
+		"fooaaac",
+		"fooaaaaa",
+		"fooaaaaY",
+		"fooaaaaaa",
+		"fooaaaaaaa",
+		"fooaaaaaaaa",
+	}
+	for i := 0; i < 1000; i++ {
+		r := RadixTree{}
+		for _, j := range rand.Perm(len(data)) {
+			r.Set(data[j], data[j])
+		}
+		for _, key := range data {
+			expectGet(t, r, key, key)
+		}
+	}
+}
+
+func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	var b [3]byte
 	r := RadixTree{}
 	keys := make([]string, 0)
