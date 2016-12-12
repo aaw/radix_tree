@@ -4,10 +4,9 @@ import (
 	"testing"
 )
 
-// TODO: replace most assertions below with expectGet
 func expectGet(t *testing.T, r RadixTree, key string, val string) {
-	if aval, err := r.Get(key); err != nil || aval != val {
-		t.Errorf("Want err == nil, val == \"%v\". Got err == %v, val == %v", val, err, aval)
+	if actual, err := r.Get(key); err != nil || actual != val {
+		t.Errorf("Want err == nil, val == \"%v\". Got err == %v, val == %v", val, err, actual)
 	}
 }
 
@@ -22,7 +21,6 @@ func TestGetEmpty(t *testing.T) {
 func TestSetAndGetBasic(t *testing.T) {
 	r := RadixTree{}
 	r.Set("foo", "bar")
-	r.DumpContents()
 	expectGet(t, r, "foo", "bar")
 }
 
@@ -60,24 +58,21 @@ func TestSetAndGetSubstrings(t *testing.T) {
 }
 
 func TestSetAndGetExhaustive(t *testing.T) {
-	//var b [3]byte
-	var b [2]byte
+	var b [3]byte
 	r := RadixTree{}
 	keys := make([]string, 0)
-	//for i := 97; i < 123; i++ {
-	for j := 97; j < 123; j++ {
-		for k := 97; k < 123; k++ {
-			//b[0], b[1], b[2] = byte(i), byte(j), byte(k)
-			b[0], b[1] = byte(j), byte(k)
-			key := string(b[:])
-			keys = append(keys, key)
+	for i := 97; i < 123; i++ {
+		for j := 97; j < 123; j++ {
+			for k := 97; k < 123; k++ {
+				b[0], b[1], b[2] = byte(i), byte(j), byte(k)
+				key := string(b[:])
+				keys = append(keys, key)
+			}
 		}
 	}
-	//}
 	for _, key := range keys {
 		r.Set(key, key)
 	}
-	r.DumpContents()
 	for _, key := range keys {
 		expectGet(t, r, key, key)
 	}

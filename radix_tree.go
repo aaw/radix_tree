@@ -57,7 +57,6 @@ func getItemOrZero(s string, i int) byte {
 
 func (t RadixTree) Get(key string) (string, error) {
 	k, v := t.get(key)
-	fmt.Printf("[Get(%v)] -> (%v, %v)\n", key, k, v)
 	if k == key {
 		return v, nil
 	} else {
@@ -66,17 +65,11 @@ func (t RadixTree) Get(key string) (string, error) {
 }
 
 func (t *RadixTree) Set(key string, val string) {
-	fmt.Printf("[Set(%v, %v)]\n", key, val)
 	k, _ := t.get(key)
-	fmt.Printf("** key is [% x]\n", key)
-	fmt.Printf("** k is [% x]\n", k)
 	i := firstDifferingIndex(k, key)
-	fmt.Printf("** fdi is [%v]\n", i)
-	fmt.Printf("** gioz(key,%v) = % X, gioz(k,%v) = % X\n", i, getItemOrZero(key, i), i, getItemOrZero(k, i))
 	keyByte := getItemOrZero(key, i)
 	kByte := getItemOrZero(k, i)
 	mask := msbMask(keyByte ^ kByte)
-	fmt.Printf("** mask is [%x]. mask & k = %x, mask & key = %v\n", mask, kByte&mask, keyByte&mask)
 	t.set(key, val, i, mask, keyByte)
 }
 
@@ -104,7 +97,6 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 	n := &t.root
 	for {
 		if *n == nil {
-			fmt.Printf("setting %v = %v\n", key, val)
 			*n = &tnode{key: key, val: val}
 			return
 		}
@@ -118,7 +110,6 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 				// we know the first bit set in the len(key)-th byte (which is
 				// the same for any string in this subtree, since they are all
 				// equal up to byte i and i > len(key).
-				fmt.Printf("Replacing internal node %v\n", x)
 				if critmask&keyByte == 0 {
 					i := inode{lc: nil, rc: *n, critbyte: critbyte, critmask: critmask}
 					*n = &i
@@ -137,7 +128,6 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 			if len(x.key) == critbyte && len(key) == critbyte {
 				// We're at a terminal node with the same key that we're
 				// trying to insert, so just overwrite the value.
-				fmt.Printf("Replacing %v's value with %v (was %v)\n", x.key, val, x.val)
 				x.val = val
 				return
 			} else {
