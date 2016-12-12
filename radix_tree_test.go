@@ -61,23 +61,14 @@ func TestSetAndGetSubstrings(t *testing.T) {
 }
 
 func TestFooBar(t *testing.T) {
+	fmt.Println("")
 	r := RadixTree{}
-	fmt.Printf("Setting cb: z\n")
-	r.Set("cb", "z")
-	r.DumpContents()
-	fmt.Println("")
-	fmt.Printf("Setting ca: zz\n")
-	r.Set("ca", "zz")
-	r.DumpContents()
-	fmt.Println("")
-	fmt.Printf("Setting bb: y\n")
-	r.Set("bb", "y")
-	r.DumpContents()
-	fmt.Println("")
-	fmt.Printf("Setting ab: x\n")
-	r.Set("ab", "x")
-	r.DumpContents()
-	expectGet(t, r, "bb", "y")
+	r.Set("ac", "xc")
+	r.Set("ad", "xd")
+	r.Set("ae", "xe")
+	expectGet(t, r, "ac", "xc")
+	expectGet(t, r, "ad", "xd")
+	expectGet(t, r, "ae", "xe")
 }
 
 func TestSetAndGetExhaustive(t *testing.T) {
