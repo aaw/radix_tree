@@ -110,7 +110,7 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 		}
 		switch x := (*n).(type) {
 		case *inode:
-			if x.critbyte >= critbyte {
+			if x.critbyte > critbyte || (x.critbyte == critbyte && x.critmask < critmask) {
 				// An internal node already discriminates at a byte index
 				// that's greater than critbyte. Insert a new internal node here
 				// that discriminates on byte index critbyte instead. To do that,

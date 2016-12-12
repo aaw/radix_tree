@@ -1,7 +1,6 @@
 package radix_tree
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -58,17 +57,6 @@ func TestSetAndGetSubstrings(t *testing.T) {
 	expectGet(t, r, "fooingly", "bara")
 	expectGet(t, r, "fooing", "barb")
 	expectGet(t, r, "foo", "barc")
-}
-
-func TestFooBar(t *testing.T) {
-	fmt.Println("")
-	r := RadixTree{}
-	r.Set("ac", "xc")
-	r.Set("ad", "xd")
-	r.Set("ae", "xe")
-	expectGet(t, r, "ac", "xc")
-	expectGet(t, r, "ad", "xd")
-	expectGet(t, r, "ae", "xe")
 }
 
 func TestSetAndGetExhaustive(t *testing.T) {
