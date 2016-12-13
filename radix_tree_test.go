@@ -2,6 +2,7 @@ package radix_tree
 
 import (
 	"math/rand"
+	"strconv"
 	"testing"
 )
 
@@ -183,5 +184,65 @@ func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	for _, key := range keys {
 		expectDelete(t, &r, key, key)
 		expectNotGet(t, r, key)
+	}
+}
+
+// Benchmarks
+
+func BenchmarkRadixTreeSet(b *testing.B) {
+	r := RadixTree{}
+	for i := 0; i < 100000; i++ {
+		r.Set(strconv.Itoa(i), "")
+	}
+}
+
+func BenchmarkMapSet(b *testing.B) {
+	m := make(map[string]string)
+	for i := 0; i < 100000; i++ {
+		m[strconv.Itoa(i)] = ""
+	}
+}
+
+func BenchmarkRadixTreeGet(b *testing.B) {
+	r := RadixTree{}
+	for i := 0; i < 100000; i++ {
+		r.Set(strconv.Itoa(i), "")
+	}
+	b.ResetTimer()
+	for i := 0; i < 100000; i++ {
+		r.Get(strconv.Itoa(i))
+	}
+}
+
+func BenchmarkMapGet(b *testing.B) {
+	m := make(map[string]string)
+	for i := 0; i < 100000; i++ {
+		m[strconv.Itoa(i)] = ""
+	}
+	b.ResetTimer()
+	for i := 0; i < 100000; i++ {
+		_ = m[strconv.Itoa(i)]
+	}
+}
+
+func BenchmarkRadixTreeDelete(b *testing.B) {
+	r := RadixTree{}
+	for i := 0; i < 100000; i++ {
+		r.Set(strconv.Itoa(i), "")
+	}
+	b.ResetTimer()
+	for i := 0; i < 100000; i++ {
+		r.Delete(strconv.Itoa(i))
+	}
+}
+
+func BenchmarkMapDelete(b *testing.B) {
+	m := make(map[string]string)
+	for i := 0; i < 100000; i++ {
+		m[strconv.Itoa(i)] = ""
+	}
+	b.ResetTimer()
+	for i := 0; i < 100000; i++ {
+		delete(m, strconv.Itoa(i))
 	}
 }
