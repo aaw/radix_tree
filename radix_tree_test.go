@@ -11,6 +11,12 @@ func expectGet(t *testing.T, r RadixTree, key string, val string) {
 	}
 }
 
+func expectNotGet(t *testing.T, r RadixTree, key string) {
+	if actual, err := r.Get(key); err == nil || actual != "" {
+		t.Errorf("Want err != nil, val == \"\". Got err == %v, val == %v", err, actual)
+	}
+}
+
 func TestGetEmpty(t *testing.T) {
 	r := RadixTree{}
 	_, err := r.Get("foo")
@@ -19,10 +25,48 @@ func TestGetEmpty(t *testing.T) {
 	}
 }
 
-func TestSetAndGetBasic(t *testing.T) {
+func TestSetGet(t *testing.T) {
 	r := RadixTree{}
 	r.Set("foo", "bar")
 	expectGet(t, r, "foo", "bar")
+}
+
+func TestSetDelete(t *testing.T) {
+	r := RadixTree{}
+	r.Set("foo", "bar")
+	r.Delete("foo")
+	expectNotGet(t, r, "foo")
+}
+
+func TestSetSetDeleteDelete(t *testing.T) {
+	r := RadixTree{}
+	r.Set("foo", "bar")
+	r.Set("bar", "foo")
+	r.Delete("foo")
+	expectNotGet(t, r, "foo")
+	expectGet(t, r, "bar", "foo")
+	r.Delete("bar")
+	expectNotGet(t, r, "foo")
+	expectNotGet(t, r, "bar")
+}
+
+func TestSetSetSetDeleteDeleteDelete(t *testing.T) {
+	r := RadixTree{}
+	r.Set("foo", "bar")
+	r.Set("bar", "foo")
+	r.Set("baz", "biz")
+	r.Delete("foo")
+	expectNotGet(t, r, "foo")
+	expectGet(t, r, "bar", "foo")
+	expectGet(t, r, "baz", "biz")
+	r.Delete("bar")
+	expectNotGet(t, r, "foo")
+	expectNotGet(t, r, "bar")
+	expectGet(t, r, "baz", "biz")
+	r.Delete("baz")
+	expectNotGet(t, r, "foo")
+	expectNotGet(t, r, "bar")
+	expectNotGet(t, r, "baz")
 }
 
 func TestGetUnsuccessful(t *testing.T) {

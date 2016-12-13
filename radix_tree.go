@@ -68,9 +68,38 @@ func (t *RadixTree) Set(key string, val string) {
 	k, _ := t.get(key)
 	i := firstDifferingIndex(k, key)
 	keyByte := getItemOrZero(key, i)
-	kByte := getItemOrZero(k, i)
-	mask := msbMask(keyByte ^ kByte)
+	mask := msbMask(keyByte ^ getItemOrZero(k, i))
 	t.set(key, val, i, mask, keyByte)
+}
+
+func (t *RadixTree) Delete(key string) (string, error) {
+	if t.root == nil {
+		return "", errors.New("Not found")
+	}
+	var oc *node
+	n := &t.root
+	parent := n
+	for {
+		switch x := (*n).(type) {
+		case *inode:
+			parent = n
+			if getItemOrZero(key, x.critbyte)&x.critmask == 0 {
+				oc, n = &x.rc, &x.lc
+			} else {
+				oc, n = &x.lc, &x.rc
+			}
+		case *tnode:
+			if x.key != key {
+				return "", errors.New("Not found")
+			}
+			if oc == nil {
+				*parent = nil
+			} else {
+				*parent = *oc
+			}
+			return x.val, nil
+		}
+	}
 }
 
 // In a RadixTree t with t.root != nil, get the ...
