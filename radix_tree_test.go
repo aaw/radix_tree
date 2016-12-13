@@ -79,6 +79,22 @@ func TestGetUnsuccessful(t *testing.T) {
 	expectGet(t, r, "foozle", "barc")
 }
 
+func TestDeleteReturnValues(t *testing.T) {
+	r := RadixTree{}
+	r.Set("fooey", "bara")
+	r.Set("fooing", "barb")
+	r.Set("foozle", "barc")
+	if val, err := r.Delete("foo"); err == nil || val != "" {
+		t.Errorf("Want err != nil, val = \"\". Got err == %v, val == %v", err, val)
+	}
+	if val, err := r.Delete("fooe"); err == nil || val != "" {
+		t.Errorf("Want err != nil, val = \"\". Got err == %v, val == %v", err, val)
+	}
+	if val, err := r.Delete("fooeyy"); err == nil || val != "" {
+		t.Errorf("Want err != nil, val = \"\". Got err == %v, val == %v", err, val)
+	}
+}
+
 func TestSetAndGetCommonPrefix(t *testing.T) {
 	r := RadixTree{}
 	r.Set("fooey", "bara")
