@@ -17,6 +17,18 @@ func expectNotGet(t *testing.T, r RadixTree, key string) {
 	}
 }
 
+func expectDelete(t *testing.T, r *RadixTree, key string, val string) {
+	if actual, err := r.Delete(key); err != nil || actual != val {
+		t.Errorf("Want err == nil, val == \"%v\". Got err == %v, val == %v", val, err, actual)
+	}
+}
+
+func expectNotDelete(t *testing.T, r RadixTree, key string) {
+	if actual, err := r.Delete(key); err == nil || actual != "" {
+		t.Errorf("Want err != nil, val == \"\". Got err == %v, val == %v", err, actual)
+	}
+}
+
 func TestGetEmpty(t *testing.T) {
 	r := RadixTree{}
 	_, err := r.Get("foo")
@@ -55,15 +67,15 @@ func TestSetSetSetDeleteDeleteDelete(t *testing.T) {
 	r.Set("foo", "bar")
 	r.Set("bar", "foo")
 	r.Set("baz", "biz")
-	r.Delete("foo")
+	expectDelete(t, &r, "foo", "bar")
 	expectNotGet(t, r, "foo")
 	expectGet(t, r, "bar", "foo")
 	expectGet(t, r, "baz", "biz")
-	r.Delete("bar")
+	expectDelete(t, &r, "bar", "foo")
 	expectNotGet(t, r, "foo")
 	expectNotGet(t, r, "bar")
 	expectGet(t, r, "baz", "biz")
-	r.Delete("baz")
+	expectDelete(t, &r, "baz", "biz")
 	expectNotGet(t, r, "foo")
 	expectNotGet(t, r, "bar")
 	expectNotGet(t, r, "baz")
@@ -79,20 +91,15 @@ func TestGetUnsuccessful(t *testing.T) {
 	expectGet(t, r, "foozle", "barc")
 }
 
-func TestDeleteReturnValues(t *testing.T) {
+func TestDeleteUnsuccessful(t *testing.T) {
 	r := RadixTree{}
+	expectNotDelete(t, r, "foo")
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
-	if val, err := r.Delete("foo"); err == nil || val != "" {
-		t.Errorf("Want err != nil, val = \"\". Got err == %v, val == %v", err, val)
-	}
-	if val, err := r.Delete("fooe"); err == nil || val != "" {
-		t.Errorf("Want err != nil, val = \"\". Got err == %v, val == %v", err, val)
-	}
-	if val, err := r.Delete("fooeyy"); err == nil || val != "" {
-		t.Errorf("Want err != nil, val = \"\". Got err == %v, val == %v", err, val)
-	}
+	expectNotDelete(t, r, "foo")
+	expectNotDelete(t, r, "fooe")
+	expectNotDelete(t, r, "fooeyy")
 }
 
 func TestSetAndGetCommonPrefix(t *testing.T) {
@@ -100,9 +107,7 @@ func TestSetAndGetCommonPrefix(t *testing.T) {
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
-	if _, err := r.Get("foo"); err == nil {
-		t.Errorf("Want err != nil, got err == %v\n", err)
-	}
+	expectNotGet(t, r, "foo")
 	expectGet(t, r, "fooey", "bara")
 	expectGet(t, r, "fooing", "barb")
 	expectGet(t, r, "foozle", "barc")
