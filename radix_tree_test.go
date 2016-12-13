@@ -123,7 +123,7 @@ func TestSetAndGetSubstrings(t *testing.T) {
 	expectGet(t, r, "foo", "barc")
 }
 
-func TestSetAndGetMixedOrder(t *testing.T) {
+func TestSetGetDeleteMixedOrder(t *testing.T) {
 	rand.Seed(0)
 	data := []string{
 		"foo",
@@ -146,11 +146,17 @@ func TestSetAndGetMixedOrder(t *testing.T) {
 	}
 	for i := 0; i < 1000; i++ {
 		r := RadixTree{}
-		for _, j := range rand.Perm(len(data)) {
-			r.Set(data[j], data[j])
-		}
-		for _, key := range data {
-			expectGet(t, r, key, key)
+		for j := 0; j < 10; j++ {
+			for _, k := range rand.Perm(len(data)) {
+				expectNotGet(t, r, data[k])
+				r.Set(data[k], data[k])
+			}
+			for _, key := range data {
+				expectGet(t, r, key, key)
+			}
+			for _, k := range rand.Perm(len(data)) {
+				expectDelete(t, &r, data[k], data[k])
+			}
 		}
 	}
 }
@@ -173,5 +179,9 @@ func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	}
 	for _, key := range keys {
 		expectGet(t, r, key, key)
+	}
+	for _, key := range keys {
+		expectDelete(t, &r, key, key)
+		expectNotGet(t, r, key)
 	}
 }
