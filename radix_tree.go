@@ -148,7 +148,7 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 					*n = &i
 					n = &i.rc
 				}
-			} else if key[x.critbyte]&x.critmask == 0 {
+			} else if getItemOrZero(key, x.critbyte)&x.critmask == 0 {
 				n = &x.lc
 			} else {
 				n = &x.rc
