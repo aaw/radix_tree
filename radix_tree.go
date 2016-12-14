@@ -173,21 +173,3 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 		}
 	}
 }
-
-func (t RadixTree) DumpContents() {
-	dumpContents(t.root, 0)
-}
-
-func dumpContents(n node, indent int) {
-	fmt.Printf("[%v]\n", n)
-	switch x := n.(type) {
-	case *inode:
-		dumpContents(x.lc, indent+2)
-		dumpContents(x.rc, indent+2)
-	case *tnode:
-		for i := 0; i < indent; i++ {
-			fmt.Printf(" ")
-		}
-		fmt.Printf("%v -> %v\n", x.key, x.val)
-	}
-}
