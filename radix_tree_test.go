@@ -185,3 +185,53 @@ func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 		expectNotGet(t, r, key)
 	}
 }
+
+func contains(x []string, s string) bool {
+	for _, y := range x {
+		if s == y {
+			return true
+		}
+	}
+	return false
+}
+
+func TestPrefixMatchBasic(t *testing.T) {
+	r := RadixTree{}
+	matches := []string{
+		"foo",
+		"fooa",
+		"foob",
+		"food",
+		"fooaa",
+		"fooab",
+		"fooba",
+		"foobb",
+		"foobaa",
+		"fooaab",
+	}
+	non_matches := []string{
+		"foa",
+		"xxx",
+		"fox",
+		"foaaa",
+		"foxaaa",
+		"foxaaaa",
+	}
+	for _, key := range matches {
+		r.Set(key, key)
+	}
+	for _, key := range non_matches {
+		r.Set(key, key)
+	}
+	actual := r.PrefixMatch("foo", 100)
+	for _, key := range matches {
+		if !contains(actual, key) {
+			t.Errorf("Want %v in list of prefix matches, but it wasn't there\n", key)
+		}
+	}
+	for _, key := range non_matches {
+		if contains(actual, key) {
+			t.Errorf("Want %v not in list of prefix matches, but it was there\n", key)
+		}
+	}
+}
