@@ -2,6 +2,7 @@ package radix_tree
 
 import (
 	"errors"
+	"strings"
 )
 
 type RadixTree struct {
@@ -54,6 +55,13 @@ func getItemOrZero(s string, i int) byte {
 	return 0
 }
 
+func shouldDescendLeft(s string, x inode) bool {
+	if x.critbyte < len(s) {
+		return s[x.critbyte]&x.critmask == 0
+	}
+	return true
+}
+
 func (t RadixTree) Get(key string) (string, error) {
 	k, v := t.get(key)
 	if k == key {
@@ -82,7 +90,7 @@ func (t *RadixTree) Delete(key string) (string, error) {
 		switch x := (*n).(type) {
 		case *inode:
 			parent = n
-			if getItemOrZero(key, x.critbyte)&x.critmask == 0 {
+			if shouldDescendLeft(key, *x) {
 				oc, n = &x.rc, &x.lc
 			} else {
 				oc, n = &x.lc, &x.rc
@@ -107,49 +115,16 @@ func (t RadixTree) get(key string) (string, string) {
 		return "", ""
 	}
 	n := t.root
-	// TODO: optimization, once getItemOrZero goes past array bounds, track and always go down LC?
 	for {
 		switch x := n.(type) {
 		case *inode:
-			if getItemOrZero(key, x.critbyte)&x.critmask == 0 {
+			if shouldDescendLeft(key, *x) {
 				n = x.lc
 			} else {
 				n = x.rc
 			}
 		case *tnode:
 			return x.key, x.val
-		}
-	}
-}
-
-func (t RadixTree) PrefixMatch(prefix string, limit int) []string {
-	if t.root == nil {
-		return []string{}
-	}
-	n := t.root
-	results := make([]string, 0, limit)
-	stack := make([]node, 0)
-	for {
-		switch x := n.(type) {
-		case *inode:
-			if x.critbyte < len(prefix) {
-				if prefix[x.critbyte]&x.critmask == 0 {
-					n = x.lc
-				} else {
-					n = x.rc
-				}
-			} else {
-				n = x.lc
-				stack = append(stack, x.rc)
-			}
-		case *tnode:
-			// TODO: return pairs here
-			results = append(results, x.key)
-			if len(stack) == 0 || len(results) >= limit {
-				return results
-			} else {
-				n, stack = stack[len(stack)-1], stack[:len(stack)-1]
-			}
 		}
 	}
 }
@@ -180,7 +155,7 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 					*n = &i
 					n = &i.rc
 				}
-			} else if getItemOrZero(key, x.critbyte)&x.critmask == 0 {
+			} else if shouldDescendLeft(key, *x) {
 				n = &x.lc
 			} else {
 				n = &x.rc
@@ -201,6 +176,40 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 					in.lc = x
 					n = &in.rc
 				}
+			}
+		}
+	}
+}
+
+func (t RadixTree) PrefixMatch(prefix string, limit int) []string {
+	if t.root == nil {
+		return []string{}
+	}
+	n := t.root
+	results := make([]string, 0, limit)
+	stack := make([]node, 0)
+	for {
+		switch x := n.(type) {
+		case *inode:
+			if x.critbyte < len(prefix) {
+				if prefix[x.critbyte]&x.critmask == 0 {
+					n = x.lc
+				} else {
+					n = x.rc
+				}
+			} else {
+				n = x.lc
+				stack = append(stack, x.rc)
+			}
+		case *tnode:
+			// TODO: return pairs here
+			if strings.HasPrefix(x.key, prefix) {
+				results = append(results, x.key)
+			}
+			if len(stack) == 0 || len(results) >= limit {
+				return results
+			} else {
+				n, stack = stack[len(stack)-1], stack[:len(stack)-1]
 			}
 		}
 	}

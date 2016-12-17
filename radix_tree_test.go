@@ -195,7 +195,7 @@ func contains(x []string, s string) bool {
 	return false
 }
 
-func TestPrefixMatchBasic(t *testing.T) {
+func TestPrefixMatch(t *testing.T) {
 	r := RadixTree{}
 	matches := []string{
 		"foo",
@@ -232,6 +232,25 @@ func TestPrefixMatchBasic(t *testing.T) {
 	for _, key := range non_matches {
 		if contains(actual, key) {
 			t.Errorf("Want %v not in list of prefix matches, but it was there\n", key)
+		}
+	}
+}
+
+func TestPrefixMatchUnsuccessful(t *testing.T) {
+	r := RadixTree{}
+	matches := []string{
+		"axxx",
+		"bxxx",
+		"cxxx",
+		"dxxx",
+		"exxx",
+	}
+	for _, key := range matches {
+		r.Set(key, key)
+	}
+	for _, prefix := range []string{"f", "g", "h", "Z"} {
+		if x := r.PrefixMatch(prefix, 100); len(x) > 0 {
+			t.Errorf("Want no prefixes to match \"%v\", got %v", prefix, x)
 		}
 	}
 }
