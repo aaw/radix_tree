@@ -103,7 +103,40 @@ func (t *RadixTree) Delete(key string) (string, error) {
 	}
 }
 
-// In a RadixTree t with t.root != nil, get the ...
+func (t RadixTree) PrefixMatch(prefix string, limit int) []string {
+	if t.root == nil {
+		return []string{}
+	}
+	n := t.root
+	results := make([]string, 0, limit)
+	stack := make([]node, 0)
+	for {
+		switch x := n.(type) {
+		case *inode:
+			if x.critbyte < len(prefix) {
+				if prefix[x.critbyte]&x.critmask == 0 {
+					n = x.lc
+				} else {
+					n = x.rc
+				}
+			} else {
+				n = x.lc
+				stack = append(stack, x.rc)
+			}
+		case *tnode:
+			// TODO: return pairs here
+			if strings.HasPrefix(x.key, prefix) {
+				results = append(results, x.key)
+			}
+			if len(stack) == 0 || len(results) >= limit {
+				return results
+			} else {
+				n, stack = stack[len(stack)-1], stack[:len(stack)-1]
+			}
+		}
+	}
+}
+
 func (t RadixTree) get(key string) (string, string) {
 	if t.root == nil {
 		return "", ""
@@ -161,40 +194,6 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 					in.lc = x
 					n = &in.rc
 				}
-			}
-		}
-	}
-}
-
-func (t RadixTree) PrefixMatch(prefix string, limit int) []string {
-	if t.root == nil {
-		return []string{}
-	}
-	n := t.root
-	results := make([]string, 0, limit)
-	stack := make([]node, 0)
-	for {
-		switch x := n.(type) {
-		case *inode:
-			if x.critbyte < len(prefix) {
-				if prefix[x.critbyte]&x.critmask == 0 {
-					n = x.lc
-				} else {
-					n = x.rc
-				}
-			} else {
-				n = x.lc
-				stack = append(stack, x.rc)
-			}
-		case *tnode:
-			// TODO: return pairs here
-			if strings.HasPrefix(x.key, prefix) {
-				results = append(results, x.key)
-			}
-			if len(stack) == 0 || len(results) >= limit {
-				return results
-			} else {
-				n, stack = stack[len(stack)-1], stack[:len(stack)-1]
 			}
 		}
 	}
