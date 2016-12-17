@@ -10,7 +10,6 @@ type RadixTree struct {
 }
 
 type node interface {
-	isTerminal() bool
 }
 
 type inode struct {
@@ -23,36 +22,6 @@ type inode struct {
 type tnode struct {
 	key string
 	val string
-}
-
-func (n tnode) isTerminal() bool { return true }
-func (n inode) isTerminal() bool { return false }
-
-func msbMask(b byte) byte {
-	b |= b >> 1
-	b |= b >> 2
-	b |= b >> 4
-	return b & ^(b >> 1)
-}
-
-func firstDifferingIndex(s string, t string) int {
-	minLen, tl := len(s), len(t)
-	if tl < minLen {
-		minLen = tl
-	}
-	for i := 0; i < minLen; i++ {
-		if s[i] != t[i] {
-			return i
-		}
-	}
-	return minLen
-}
-
-func getItemOrZero(s string, i int) byte {
-	if i < len(s) {
-		return s[i]
-	}
-	return 0
 }
 
 func shouldDescendLeft(s string, x inode) bool {
@@ -73,10 +42,35 @@ func (t RadixTree) Get(key string) (string, error) {
 
 func (t *RadixTree) Set(key string, val string) {
 	k, _ := t.get(key)
-	i := firstDifferingIndex(k, key)
-	keyByte := getItemOrZero(key, i)
-	mask := msbMask(keyByte ^ getItemOrZero(k, i))
-	t.set(key, val, i, mask, keyByte)
+	// Find first differing byte between k and key
+	minLen := len(key)
+	if len(k) < minLen {
+		minLen = len(k)
+	}
+	diffByte := 0
+	var keyByte, kByte byte
+	for i := 0; i < minLen; i++ {
+		if key[i] != k[i] {
+			keyByte, kByte = key[i], k[i]
+			break
+		}
+		diffByte++
+	}
+	if keyByte == 0 && kByte == 0 {
+		if diffByte < len(key) {
+			keyByte = key[diffByte]
+		}
+		if diffByte < len(k) {
+			kByte = k[diffByte]
+		}
+	}
+	// mask is the most significant differing bit set in key[i] and k[i]
+	mask := keyByte ^ kByte
+	mask |= mask >> 1
+	mask |= mask >> 2
+	mask |= mask >> 4
+	mask &= ^(mask >> 1)
+	t.set(key, val, diffByte, mask, keyByte)
 }
 
 func (t *RadixTree) Delete(key string) (string, error) {
@@ -139,13 +133,6 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 		switch x := (*n).(type) {
 		case *inode:
 			if x.critbyte > critbyte || (x.critbyte == critbyte && x.critmask < critmask) {
-				// An internal node already discriminates at a byte index
-				// that's greater than critbyte. Insert a new internal node here
-				// that discriminates on byte index critbyte instead. To do that,
-				// we have to walk down the tree and find a terminal node so that
-				// we know the first bit set in the len(key)-th byte (which is
-				// the same for any string in this subtree, since they are all
-				// equal up to byte i and i > len(key).
 				if critmask&keyByte == 0 {
 					i := inode{lc: nil, rc: *n, critbyte: critbyte, critmask: critmask}
 					*n = &i
@@ -162,8 +149,6 @@ func (t *RadixTree) set(key string, val string, critbyte int, critmask byte, key
 			}
 		case *tnode:
 			if len(x.key) == critbyte && len(key) == critbyte {
-				// We're at a terminal node with the same key that we're
-				// trying to insert, so just overwrite the value.
 				x.val = val
 				return
 			} else {
