@@ -28,7 +28,7 @@ func ensureData(n int) {
 func BenchmarkRadixTreeSet(b *testing.B) {
 	ensureData(b.N)
 	b.ResetTimer()
-	r := RadixTree{}
+	r := NewTree()
 	for i := 0; i < b.N; i++ {
 		r.Set(data[i], data[i])
 	}
@@ -45,7 +45,7 @@ func BenchmarkMapSet(b *testing.B) {
 
 func BenchmarkRadixTreeGet(b *testing.B) {
 	ensureData(b.N)
-	r := RadixTree{}
+	r := NewTree()
 	for i := 0; i < b.N; i++ {
 		r.Set(data[i], data[i])
 	}
@@ -69,7 +69,7 @@ func BenchmarkMapGet(b *testing.B) {
 
 func BenchmarkRadixTreeDelete(b *testing.B) {
 	ensureData(b.N)
-	r := RadixTree{}
+	r := NewTree()
 	for i := 0; i < b.N; i++ {
 		r.Set(data[i], data[i])
 	}

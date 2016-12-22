@@ -6,52 +6,39 @@ import (
 )
 
 func expectGet(t *testing.T, r RadixTree, key string, val string) {
-	if actual, err := r.Get(key); err != nil || actual != val {
-		t.Errorf("Want err == nil, val == \"%v\". Got err == %v, val == %v", val, err, actual)
+	if actual, ok := r.Get(key); ok && actual != val {
+		t.Errorf("Want val == \"%v\", ok. Got val == %v, ok == %v", val, actual, ok)
 	}
 }
 
 func expectNotGet(t *testing.T, r RadixTree, key string) {
-	if actual, err := r.Get(key); err == nil || actual != "" {
-		t.Errorf("Want err != nil, val == \"\". Got err == %v, val == %v", err, actual)
-	}
-}
-
-func expectDelete(t *testing.T, r *RadixTree, key string, val string) {
-	if actual, err := r.Delete(key); err != nil || actual != val {
-		t.Errorf("Want err == nil, val == \"%v\". Got err == %v, val == %v", val, err, actual)
-	}
-}
-
-func expectNotDelete(t *testing.T, r RadixTree, key string) {
-	if actual, err := r.Delete(key); err == nil || actual != "" {
-		t.Errorf("Want err != nil, val == \"\". Got err == %v, val == %v", err, actual)
+	if actual, ok := r.Get(key); ok {
+		t.Errorf("Want !ok. Got val == %v, ok == %v", actual, ok)
 	}
 }
 
 func TestGetEmpty(t *testing.T) {
-	r := RadixTree{}
-	_, err := r.Get("foo")
-	if err == nil {
-		t.Error("Want err != nil, got err == nil")
+	r := NewTree()
+	if _, ok := r.Get("foo"); ok {
+		t.Error("Want !ok, got ok")
 	}
 }
 
 func TestSetGet(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("foo", "bar")
 	expectGet(t, r, "foo", "bar")
 }
 
 func TestSetDelete(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("foo", "bar")
 	r.Delete("foo")
 	expectNotGet(t, r, "foo")
 }
 
 func TestSetSetDeleteDelete(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("foo", "bar")
 	r.Set("bar", "foo")
 	r.Delete("foo")
@@ -63,26 +50,26 @@ func TestSetSetDeleteDelete(t *testing.T) {
 }
 
 func TestSetSetSetDeleteDeleteDelete(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("foo", "bar")
 	r.Set("bar", "foo")
 	r.Set("baz", "biz")
-	expectDelete(t, &r, "foo", "bar")
+	r.Delete("foo")
 	expectNotGet(t, r, "foo")
 	expectGet(t, r, "bar", "foo")
 	expectGet(t, r, "baz", "biz")
-	expectDelete(t, &r, "bar", "foo")
+	r.Delete("bar")
 	expectNotGet(t, r, "foo")
 	expectNotGet(t, r, "bar")
 	expectGet(t, r, "baz", "biz")
-	expectDelete(t, &r, "baz", "biz")
+	r.Delete("baz")
 	expectNotGet(t, r, "foo")
 	expectNotGet(t, r, "bar")
 	expectNotGet(t, r, "baz")
 }
 
 func TestGetUnsuccessful(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
@@ -92,18 +79,21 @@ func TestGetUnsuccessful(t *testing.T) {
 }
 
 func TestDeleteUnsuccessful(t *testing.T) {
-	r := RadixTree{}
-	expectNotDelete(t, r, "foo")
+	r := NewTree()
+	r.Delete("foo")
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
-	expectNotDelete(t, r, "foo")
-	expectNotDelete(t, r, "fooe")
-	expectNotDelete(t, r, "fooeyy")
+	r.Delete("foo")
+	r.Delete("fooe")
+	r.Delete("fooeyy")
+	expectGet(t, r, "fooey", "bara")
+	expectGet(t, r, "fooing", "barb")
+	expectGet(t, r, "foozle", "barc")
 }
 
 func TestSetAndGetCommonPrefix(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
@@ -114,7 +104,7 @@ func TestSetAndGetCommonPrefix(t *testing.T) {
 }
 
 func TestSetAndGetSubstrings(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	r.Set("fooingly", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foo", "barc")
@@ -145,7 +135,7 @@ func TestSetGetDeleteMixedOrder(t *testing.T) {
 		"fooaaaaaaaa",
 	}
 	for i := 0; i < 1000; i++ {
-		r := RadixTree{}
+		r := NewTree()
 		for j := 0; j < 10; j++ {
 			for _, k := range rand.Perm(len(data)) {
 				expectNotGet(t, r, data[k])
@@ -155,7 +145,7 @@ func TestSetGetDeleteMixedOrder(t *testing.T) {
 				expectGet(t, r, key, key)
 			}
 			for _, k := range rand.Perm(len(data)) {
-				expectDelete(t, &r, data[k], data[k])
+				r.Delete(data[k])
 			}
 		}
 	}
@@ -163,7 +153,7 @@ func TestSetGetDeleteMixedOrder(t *testing.T) {
 
 func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	var b [3]byte
-	r := RadixTree{}
+	r := NewTree()
 	keys := make([]string, 0)
 	for i := 97; i < 123; i++ {
 		for j := 97; j < 123; j++ {
@@ -181,11 +171,12 @@ func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 		expectGet(t, r, key, key)
 	}
 	for _, key := range keys {
-		expectDelete(t, &r, key, key)
+		r.Delete(key)
 		expectNotGet(t, r, key)
 	}
 }
 
+/*
 func contains(x []string, s string) bool {
 	for _, y := range x {
 		if s == y {
@@ -196,7 +187,7 @@ func contains(x []string, s string) bool {
 }
 
 func TestPrefixMatch(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	matches := []string{
 		"foo",
 		"fooa",
@@ -237,7 +228,7 @@ func TestPrefixMatch(t *testing.T) {
 }
 
 func TestPrefixMatchUnsuccessful(t *testing.T) {
-	r := RadixTree{}
+	r := NewTree()
 	matches := []string{
 		"axxx",
 		"bxxx",
@@ -254,3 +245,4 @@ func TestPrefixMatchUnsuccessful(t *testing.T) {
 		}
 	}
 }
+*/
