@@ -2,6 +2,8 @@ package radix_tree
 
 import (
 	"math/rand"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -173,6 +175,44 @@ func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	for _, key := range keys {
 		r.Delete(key)
 		expectNotGet(t, r, key)
+	}
+}
+
+func str(x []string) string {
+	z := make([]string, len(x))
+	copy(z, x)
+	sort.Strings(z)
+	return strings.Join(z, " ")
+}
+
+func TestSuggest(t *testing.T) {
+	data := []string{
+		"foo",
+		"fooa",
+		"foob",
+		"fooc",
+		"fooY",
+		"fooZ",
+		"fooaa",
+		"fooab",
+		"fooaaa",
+		"fooaaZ",
+		"fooaaaa",
+		"fooaaac",
+		"fooaaaaa",
+		"fooaaaaY",
+		"fooaaaaaa",
+		"fooaaaaaaa",
+		"fooaaaaaaaa",
+	}
+	r := NewTree()
+	for _, key := range data {
+		r.Set(key, key)
+	}
+	x := r.Suggest("foo", 2)
+	want, got := "foo fooa", str(x)
+	if got != want {
+		t.Errorf("Want %v, got %v\n", want, got)
 	}
 }
 
