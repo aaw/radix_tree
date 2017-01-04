@@ -93,13 +93,15 @@ type state struct {
 	arr    []int
 }
 
+// 0th offset is actually -d diagonals over from start state
 func (s state) isAccepting(wl int, d int) bool {
 	for i, x := range s.arr {
-		if x < d+1 && s.offset+i-d+x == wl {
+		if x < d+1 && s.offset+i+x == wl {
+			fmt.Printf("[%v](%v,%v) with %v, %v [Accepting]\n", s, i, x, wl, d)
 			return true
 		}
 	}
-	fmt.Printf("[%v] with %v, %v Not accepting\n", s, wl, d)
+	fmt.Printf("[%v] with %v, %v [Not accepting]\n", s, wl, d)
 	return false
 }
 
@@ -130,24 +132,32 @@ func (s state) transition(w []rune, r rune, d int) (*state, bool) {
 	ns := newState(d, s.offset+1)
 	isValid := false
 	cr := d + 1
-	for j, x := range s.arr {
+	for j, x := range s.arr[1:] {
 		// Calculate carry up from j+1st diagonal
 		cu := d + 1
-		if j < len(s.arr)-1 {
-			cu = s.arr[j+1] + 1
+		if j < len(s.arr)-2 {
+			cu = s.arr[j+2] + 1
 		}
-		fmt.Printf("x: %v, cr: %v, cu: %v\n", x+1, cr, cu)
+		fmt.Printf("[%v] x: %v, cr: %v, cu: %v\n", j, x+1, cr, cu)
 		carry := min(x+1, cr, cu)
 		if carry < d+1 {
 			isValid = true
 		}
 		ns.arr[j] = carry
 		for k := x; k < d+1; k++ {
-			if j+s.offset+k < len(w) && w[j+s.offset+k] == r /* TODO: right comp here? */ {
-				cr = k
+			if j+s.offset+k+1 < len(w) && w[j+s.offset+k+1] == r /* TODO: right comp here? */ {
+				if cr > k {
+					fmt.Printf("carrying %v right\n", k)
+					cr = k
+				}
 			}
 		}
 	}
+	ns.arr[len(ns.arr)-1] = cr
+	if cr < d+1 {
+		isValid = true
+	}
+	fmt.Printf("transition from %v to %v (%v)\n", s, ns, isValid)
 	return ns, isValid
 }
 
@@ -170,16 +180,17 @@ type frame struct {
 func (t RadixTree) Suggest(key string, d int) []string {
 	runes := stringToRunes(key)
 	results := []string{}
-	initial := newState(d, -d)
-	initial.arr[d] = 0
+	initial := newState(d, -2*d)
+	initial.arr[2*d] = 0
 	stack := []frame{frame{n: t.root, s: initial, rs: []rune{}}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
 		for r, _ := range f.n.vals {
-			fmt.Printf("Considering %v:%v...\n", string(f.rs), string(r))
-			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(f.rs)+1, d) {
+			fmt.Printf("\nConsidering %v:%v...\n", string(f.rs), string(r))
+			// TODO: if isAccepting depends on len(key) like i think it does, push len(key) into state
+			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
 				fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
 				nrs := make([]rune, len(f.rs))
 				copy(nrs, f.rs)

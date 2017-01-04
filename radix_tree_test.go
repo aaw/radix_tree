@@ -210,7 +210,7 @@ func TestSuggest(t *testing.T) {
 		r.Set(key, key)
 	}
 	x := r.Suggest("foo", 2)
-	want, got := "foo fooa", str(x)
+	want, got := "foo fooY fooZ fooa fooaa fooab foob fooc", str(x)
 	if got != want {
 		t.Errorf("Want %v, got %v\n", want, got)
 	}
