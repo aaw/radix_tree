@@ -187,6 +187,10 @@ func str(x []string) string {
 
 func TestSuggest(t *testing.T) {
 	data := []string{
+		"f",
+		"x",
+		"fo",
+		"fx",
 		"foo",
 		"fooa",
 		"foob",
@@ -210,7 +214,7 @@ func TestSuggest(t *testing.T) {
 		r.Set(key, key)
 	}
 	x := r.Suggest("foo", 2)
-	want, got := "foo fooY fooZ fooa fooaa fooab foob fooc", str(x)
+	want, got := "f fo foo fooY fooZ fooa fooaa fooab foob fooc fx", str(x)
 	if got != want {
 		t.Errorf("Want %v, got %v\n", want, got)
 	}
