@@ -93,12 +93,10 @@ type state struct {
 	arr    []int
 }
 
-// 0th offset is actually -d diagonals over from start state
 func (s state) isAccepting(wl int, d int) bool {
 	for i, x := range s.arr {
 		dist := wl - s.offset - i
 		if dist <= d && dist >= x {
-			//if x < d+1 && s.offset+i+x == wl {
 			fmt.Printf("[%v](%v,%v) with %v, %v [Accepting]\n", s, i, x, wl, d)
 			return true
 		}
