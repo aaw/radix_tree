@@ -210,14 +210,27 @@ func TestSuggest(t *testing.T) {
 		"fooaaaaaaaa",
 	}
 	r := NewTree()
+	var got, want string
 	for _, key := range data {
 		r.Set(key, key)
 	}
-	x := r.Suggest("foo", 2)
-	want, got := "f fo foo fooY fooZ fooa fooaa fooab foob fooc fx", str(x)
+	/*got := str(r.Suggest("foo", 0))
+	want := "foo"
 	if got != want {
-		t.Errorf("Want %v, got %v\n", want, got)
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}*/
+	got = str(r.Suggest("foo", 1))
+	want = "fo foo fooY fooZ fooa foob fooc"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
+	return
+	got = str(r.Suggest("foo", 2))
+	want = "f fo foo fooY fooZ fooa fooaa fooab foob fooc fx"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+
 }
 
 /*

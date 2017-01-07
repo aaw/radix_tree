@@ -132,6 +132,8 @@ func (s state) transition(w []rune, r rune, d int) (*state, bool) {
 	ns := newState(d, s.offset+1)
 	isValid := false
 	cr := d + 1
+	// TODO: this s.arr[1:] trick doesn't work on d=0, maybe should collapse the two
+	// cases here (inside for loop and after for loop cleanup)
 	for j, x := range s.arr[1:] {
 		// Calculate carry up from j+1st diagonal
 		cu := d + 1
@@ -196,6 +198,8 @@ func (t RadixTree) Suggest(key string, d int) []string {
 				copy(nrs, f.rs)
 				nrs = append(nrs, r)
 				results = append(results, string(nrs))
+			} else {
+				fmt.Printf("-> %v Not accepting\n", string(r))
 			}
 		}
 		for r, node := range f.n.child {
