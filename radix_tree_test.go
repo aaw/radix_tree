@@ -234,6 +234,21 @@ func TestSuggest(t *testing.T) {
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
+	got = str(r.Suggest("fooaaa", 3))
+	want = "foo fooY fooZ fooa fooaa fooaaZ fooaaa fooaaaa fooaaaaY fooaaaaa fooaaaaaa fooaaac fooab foob fooc"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = str(r.Suggest("foobbb", 3))
+	want = "foo fooY fooZ fooa fooaa fooaaZ fooaaa fooab foob fooc"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = str(r.Suggest("foobbb", 4))
+	want = "fo foo fooY fooZ fooa fooaa fooaaZ fooaaa fooaaaa fooaaac fooab foob fooc"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
 }
 
 /*
