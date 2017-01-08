@@ -251,6 +251,34 @@ func TestSuggest(t *testing.T) {
 	}
 }
 
+func editDistance(s string, t string) int {
+	return editDistanceHelper(stringToRunes(s), stringToRunes(t))
+}
+
+func editDistanceHelper(s []rune, t []rune) int {
+	if len(s) == 0 {
+		return len(t)
+	} else if len(t) == 0 {
+		return len(s)
+	} else if s[len(s)-1] == t[len(t)-1] {
+		return editDistanceHelper(s[:len(s)-1], t[:len(t)-1])
+	} else {
+		x := editDistanceHelper(s, t[:len(t)-1])
+		y := editDistanceHelper(s[:len(s)-1], t)
+		z := editDistanceHelper(s[:len(s)-1], t[:len(t)-1])
+		d := x
+		if y < d {
+			d = y
+		}
+		if z < d {
+			d = z
+		}
+		return 1 + d
+	}
+}
+
+// TODO: exhaustive edit distance test using editDistance above...
+
 /*
 func contains(x []string, s string) bool {
 	for _, y := range x {
