@@ -113,47 +113,33 @@ func newState(d int, offset int) *state {
 	return &state{offset: offset, arr: arr}
 }
 
-func min(x int, y int, z int) int {
-	a := x
-	if y < a {
-		a = y
-	}
-	if z < a {
-		a = z
-	}
-	return a
-}
-
 // diagonal in the actual NFA is offset + d. index into arr is d for
 // the main diagonal, so initial state is offset: -d, arr = [d+1, ... , d+1, 0, d+1, ..., d+1]
 func (s state) transition(w []rune, r rune, d int) (*state, bool) {
-	// cr == carry right, right transition
-	// cu == carry up, up transition from diagonal to the right
 	ns := newState(d, s.offset+1)
 	isValid := false
 	for j := range ns.arr {
-		cr := d + 1
+		// Compute carry right
+		val := d + 1
 		for k := s.arr[j]; k < d+1; k++ {
 			fmt.Printf("considering carry\n")
 			if j+s.offset+k < len(w) && w[j+s.offset+k] == r /* TODO: right comp here? */ {
-				if cr > k {
+				if val > k {
 					fmt.Printf("carrying %v right\n", k)
-					cr = k
+					val = k
 				}
 			}
 		}
-		x := d + 1
-		if j < len(s.arr)-1 {
-			x = s.arr[j+1] + 1
+		// Compute diagonal contribution
+		if j < len(s.arr)-1 && s.arr[j+1]+1 < val {
+			val = s.arr[j+1] + 1
 		}
-		cu := d + 1
-		if j < len(s.arr)-2 {
-			cu = s.arr[j+2] + 1
+		// Compute carry up
+		if j < len(s.arr)-2 && s.arr[j+2]+1 < val {
+			val = s.arr[j+2] + 1
 		}
-		fmt.Printf("[%v] x: %v, cr: %v, cu: %v\n", j, x+1, cr, cu)
-		carry := min(x, cr, cu)
-		if carry < d+1 {
-			ns.arr[j], isValid = carry, true
+		if val < d+1 {
+			ns.arr[j], isValid = val, true
 		}
 	}
 	fmt.Printf("transition from %v to %v (%v)\n", s, ns, isValid)
