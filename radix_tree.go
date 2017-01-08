@@ -1,21 +1,8 @@
 package radix_tree
 
 import (
-	"fmt"
 	"unicode/utf8"
 )
-
-// (6)---->(7)---->((8))
-//  ^     ↗ ^      ↗ ^
-//  |    /  |     /  |
-//  |  /    |   /    |
-//  |/      | /      |
-// (3)---->(4)---->((5))
-//  ^     ↗ ^      ↗ ^
-//  |    /  |     /  |
-//  |  /    |   /    |
-//  |/      | /      |
-// (0)---->(1)---->((2))
 
 type RadixTree struct {
 	root *node
@@ -97,11 +84,11 @@ func (s state) isAccepting(wl int, d int) bool {
 	for i, x := range s.arr {
 		dist := wl - s.offset - i
 		if dist <= d && dist >= x {
-			fmt.Printf("[%v](%v,%v) with %v, %v [Accepting]\n", s, i, x, wl, d)
+			//fmt.Printf("[%v](%v,%v) with %v, %v [Accepting]\n", s, i, x, wl, d)
 			return true
 		}
 	}
-	fmt.Printf("[%v] with %v, %v [Not accepting]\n", s, wl, d)
+	//fmt.Printf("[%v] with %v, %v [Not accepting]\n", s, wl, d)
 	return false
 }
 
@@ -122,10 +109,9 @@ func (s state) transition(w []rune, r rune, d int) (*state, bool) {
 		// Compute carry right
 		val := d + 1
 		for k := s.arr[j]; k < d+1; k++ {
-			fmt.Printf("considering carry\n")
-			if j+s.offset+k < len(w) && w[j+s.offset+k] == r /* TODO: right comp here? */ {
+			if j+s.offset+k < len(w) && w[j+s.offset+k] == r {
 				if val > k {
-					fmt.Printf("carrying %v right\n", k)
+					//fmt.Printf("carrying %v right\n", k)
 					val = k
 				}
 			}
@@ -142,7 +128,7 @@ func (s state) transition(w []rune, r rune, d int) (*state, bool) {
 			ns.arr[j], isValid = val, true
 		}
 	}
-	fmt.Printf("transition from %v to %v (%v)\n", s, ns, isValid)
+	//fmt.Printf("transition from %v to %v (%v)\n", s, ns, isValid)
 	return ns, isValid
 }
 
@@ -162,6 +148,12 @@ type frame struct {
 	rs []rune
 }
 
+func pushRune(rs []rune, r rune) []rune {
+	newrs := make([]rune, len(rs))
+	copy(newrs, rs)
+	return append(newrs, r)
+}
+
 func (t RadixTree) Suggest(key string, d int) []string {
 	runes := stringToRunes(key)
 	results := []string{}
@@ -171,27 +163,19 @@ func (t RadixTree) Suggest(key string, d int) []string {
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
-		fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
+		// fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
 		for r, _ := range f.n.vals {
-			fmt.Printf("\nConsidering %v:%v...\n", string(f.rs), string(r))
+			// fmt.Printf("\nConsidering %v:%v...\n", string(f.rs), string(r))
 			// TODO: if isAccepting depends on len(key) like i think it does, push len(key) into state
 			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
-				fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
-				nrs := make([]rune, len(f.rs))
-				copy(nrs, f.rs)
-				nrs = append(nrs, r)
-				results = append(results, string(nrs))
-			} else {
-				fmt.Printf("-> %v Not accepting\n", string(r))
+				//fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
+				results = append(results, string(pushRune(f.rs, r)))
 			}
 		}
 		for r, node := range f.n.child {
 			if ns, ok := f.s.transition(runes, r, d); ok {
-				fmt.Printf("Transition: %v:%v\n", string(f.rs), string(r))
-				nrs := make([]rune, len(f.rs))
-				copy(nrs, f.rs)
-				nrs = append(nrs, r)
-				stack = append(stack, frame{n: node, s: ns, rs: nrs})
+				//fmt.Printf("Transition: %v:%v\n", string(f.rs), string(r))
+				stack = append(stack, frame{n: node, s: ns, rs: pushRune(f.rs, r)})
 			}
 		}
 	}
