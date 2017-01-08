@@ -131,33 +131,30 @@ func (s state) transition(w []rune, r rune, d int) (*state, bool) {
 	// cu == carry up, up transition from diagonal to the right
 	ns := newState(d, s.offset+1)
 	isValid := false
-	cr := d + 1
-	// TODO: this s.arr[1:] trick doesn't work on d=0, maybe should collapse the two
-	// cases here (inside for loop and after for loop cleanup)
-	for j, x := range s.arr[1:] {
-		// Calculate carry up from j+1st diagonal
-		cu := d + 1
-		if j < len(s.arr)-2 {
-			cu = s.arr[j+2] + 1
-		}
-		fmt.Printf("[%v] x: %v, cr: %v, cu: %v\n", j, x+1, cr, cu)
-		carry := min(x+1, cr, cu)
-		if carry < d+1 {
-			isValid = true
-		}
-		ns.arr[j] = carry
-		for k := x; k < d+1; k++ {
-			if j+s.offset+k+1 < len(w) && w[j+s.offset+k+1] == r /* TODO: right comp here? */ {
+	for j := range ns.arr {
+		cr := d + 1
+		for k := s.arr[j]; k < d+1; k++ {
+			fmt.Printf("considering carry\n")
+			if j+s.offset+k < len(w) && w[j+s.offset+k] == r /* TODO: right comp here? */ {
 				if cr > k {
 					fmt.Printf("carrying %v right\n", k)
 					cr = k
 				}
 			}
 		}
-	}
-	ns.arr[len(ns.arr)-1] = cr
-	if cr < d+1 {
-		isValid = true
+		x := d + 1
+		if j < len(s.arr)-1 {
+			x = s.arr[j+1] + 1
+		}
+		cu := d + 1
+		if j < len(s.arr)-2 {
+			cu = s.arr[j+2] + 1
+		}
+		fmt.Printf("[%v] x: %v, cr: %v, cu: %v\n", j, x+1, cr, cu)
+		carry := min(x, cr, cu)
+		if carry < d+1 {
+			ns.arr[j], isValid = carry, true
+		}
 	}
 	fmt.Printf("transition from %v to %v (%v)\n", s, ns, isValid)
 	return ns, isValid

@@ -214,11 +214,11 @@ func TestSuggest(t *testing.T) {
 	for _, key := range data {
 		r.Set(key, key)
 	}
-	/*got := str(r.Suggest("foo", 0))
-	want := "foo"
+	got = str(r.Suggest("foo", 0))
+	want = "foo"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
-	}*/
+	}
 	got = str(r.Suggest("foo", 1))
 	want = "fo foo fooY fooZ fooa foob fooc"
 	if got != want {
@@ -234,7 +234,6 @@ func TestSuggest(t *testing.T) {
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-
 }
 
 /*
