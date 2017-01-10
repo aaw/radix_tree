@@ -277,7 +277,33 @@ func editDistanceHelper(s []rune, t []rune) int {
 	}
 }
 
-// TODO: exhaustive edit distance test using editDistance above...
+/*
+func allStringsWithinEditDistance(needle string, haystack []string, d int) {
+	for _, key := range haystack {
+
+	}
+}
+
+
+func TestSuggestExhaustive(t *testing.T) {
+	rand.Seed(0)
+	for i := 0; i < 100; i++ {
+		r := NewTree()
+		keys := map[string]bool{}
+		for j := 0; j < 10000; j++ {
+			s := randString(10)
+			keys[s] = true
+			r.Set(s, s)
+		}
+		haystack := []string{}
+		for k := range keys {
+			haystack := append(haystack, k)
+		}
+	}
+	// TODO: exhaustive edit distance test using editDistance above...
+}*/
+
+// TODO: benchmark that loads words file
 
 /*
 func contains(x []string, s string) bool {
