@@ -179,5 +179,7 @@ func (t RadixTree) Suggest(key string, d int) []string {
 			}
 		}
 	}
+	// TODO: add a limit param, also investigate returning items on a channel.
+	// TODO: return key, value pairs here.
 	return results
 }
