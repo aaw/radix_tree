@@ -12,6 +12,18 @@ import (
 var data []string
 var alphabet = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 var words []string
+var suggest_data = []string{
+	"acetonylacetone",
+	"barbaralalia",
+	"calcic",
+	"dark",
+	"using",
+	"volt",
+	"wrenchingly",
+	"xenos",
+	"yore",
+	"zymosis",
+}
 
 func randString(n int) string {
 	runes := make([]rune, n)
@@ -55,41 +67,61 @@ func benchmarkSuggest(d int, b *testing.B) {
 		r.Set(word, word)
 	}
 	b.ResetTimer()
-	data = []string{
-		"acetonylacetone",
-		"barbaralalia",
-		"calcic",
-		"dark",
-		"using",
-		"volt",
-		"wrenchingly",
-		"xenos",
-		"yore",
-		"zymosis",
-	}
 	for i := 0; i < b.N; i++ {
-		r.Suggest(data[i%len(data)], d)
+		r.Suggest(suggest_data[i%len(suggest_data)], d, 10)
 	}
 }
 
-func BenchmarkSuggest1(b *testing.B) {
+func benchmarkSuggestAfterPrefix(d int, p int, b *testing.B) {
+	ensureWords()
+	r := NewTree()
+	for _, word := range words {
+		r.Set(word, word)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r.SuggestAfterPrefix(suggest_data[i%len(suggest_data)], p, d, 10)
+	}
+}
+
+func BenchmarkSuggestTopTenDistance1(b *testing.B) {
 	benchmarkSuggest(1, b)
 }
 
-func BenchmarkSuggest2(b *testing.B) {
+func BenchmarkSuggestTopTenDistance2(b *testing.B) {
 	benchmarkSuggest(2, b)
 }
 
-func BenchmarkSuggest3(b *testing.B) {
+func BenchmarkSuggestTopTenDistance3(b *testing.B) {
 	benchmarkSuggest(3, b)
 }
 
-func BenchmarkSuggest4(b *testing.B) {
+func BenchmarkSuggestTopTenDistance4(b *testing.B) {
 	benchmarkSuggest(4, b)
 }
 
-func BenchmarkSuggest5(b *testing.B) {
+func BenchmarkSuggestTopTenDistance5(b *testing.B) {
 	benchmarkSuggest(5, b)
+}
+
+func BenchmarkSuggestAfterLength2PrefixTopTenDistance1(b *testing.B) {
+	benchmarkSuggestAfterPrefix(1, 2, b)
+}
+
+func BenchmarkSuggestAfterLength2PrefixTopTenDistance2(b *testing.B) {
+	benchmarkSuggestAfterPrefix(2, 2, b)
+}
+
+func BenchmarkSuggestAfterLength2PrefixTopTenDistance3(b *testing.B) {
+	benchmarkSuggestAfterPrefix(3, 2, b)
+}
+
+func BenchmarkSuggestAfterLength2PrefixTopTenDistance4(b *testing.B) {
+	benchmarkSuggestAfterPrefix(4, 2, b)
+}
+
+func BenchmarkSuggestAfterLength2PrefixTopTenDistance5(b *testing.B) {
+	benchmarkSuggestAfterPrefix(5, 2, b)
 }
 
 func BenchmarkRadixTreeSet(b *testing.B) {

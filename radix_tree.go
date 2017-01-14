@@ -132,14 +132,19 @@ func (s state) transition(w []rune, r rune, d int) (*state, bool) {
 	return ns, isValid
 }
 
-func stringToRunes(s string) []rune {
+// Read at most the first n runes from the string, return those
+// runes in an array and the remaining string.
+func stringToRunes(s string, n int) ([]rune, string) {
 	rs := []rune{}
 	for i, w := 0, 0; i < len(s); i += w {
+		if len(rs) >= n {
+			return rs, s[i:]
+		}
 		r, width := utf8.DecodeRuneInString(s[i:])
 		rs = append(rs, r)
 		w = width
 	}
-	return rs
+	return rs, ""
 }
 
 type frame struct {
@@ -154,12 +159,28 @@ func pushRune(rs []rune, r rune) []rune {
 	return append(newrs, r)
 }
 
-func (t RadixTree) Suggest(key string, d int) []string {
-	runes := stringToRunes(key)
+func (t RadixTree) SuggestAfterPrefix(key string, np int, d int, n int) []string {
+	runes, s := stringToRunes(key, np)
+	node := t.root
+	var ok bool
+	for _, r := range runes {
+		if node, ok = node.child[r]; !ok {
+			return []string{}
+		}
+	}
+	return suggest(node, s, d, n)
+}
+
+func (t RadixTree) Suggest(key string, d int, n int) []string {
+	return suggest(t.root, key, d, n)
+}
+
+func suggest(root *node, key string, d int, n int) []string {
+	runes, _ := stringToRunes(key, len(key))
 	results := []string{}
 	initial := newState(d, -2*d)
 	initial.arr[2*d] = 0
-	stack := []frame{frame{n: t.root, s: initial, rs: []rune{}}}
+	stack := []frame{frame{n: root, s: initial, rs: []rune{}}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
@@ -170,6 +191,9 @@ func (t RadixTree) Suggest(key string, d int) []string {
 			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
 				//fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
 				results = append(results, string(pushRune(f.rs, r)))
+				if len(results) >= n {
+					return results
+				}
 			}
 		}
 		for r, node := range f.n.child {
@@ -179,7 +203,6 @@ func (t RadixTree) Suggest(key string, d int) []string {
 			}
 		}
 	}
-	// TODO: add a limit param, also investigate returning items on a channel.
 	// TODO: return key, value pairs here.
 	return results
 }
