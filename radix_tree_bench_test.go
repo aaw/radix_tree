@@ -68,7 +68,7 @@ func benchmarkSuggest(d int, b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r.Suggest(suggest_data[i%len(suggest_data)], d, 10)
+		r.Suggest(suggest_data[i%len(suggest_data)], int8(d), 10)
 	}
 }
 
@@ -80,7 +80,7 @@ func benchmarkSuggestAfterPrefix(d int, p int, b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r.SuggestAfterPrefix(suggest_data[i%len(suggest_data)], p, d, 10)
+		r.SuggestAfterPrefix(suggest_data[i%len(suggest_data)], p, int8(d), 10)
 	}
 }
 
@@ -102,6 +102,26 @@ func BenchmarkSuggestTopTenDistance4(b *testing.B) {
 
 func BenchmarkSuggestTopTenDistance5(b *testing.B) {
 	benchmarkSuggest(5, b)
+}
+
+func BenchmarkSuggestAfterLength1PrefixTopTenDistance1(b *testing.B) {
+	benchmarkSuggestAfterPrefix(1, 1, b)
+}
+
+func BenchmarkSuggestAfterLength1PrefixTopTenDistance2(b *testing.B) {
+	benchmarkSuggestAfterPrefix(2, 1, b)
+}
+
+func BenchmarkSuggestAfterLength1PrefixTopTenDistance3(b *testing.B) {
+	benchmarkSuggestAfterPrefix(3, 1, b)
+}
+
+func BenchmarkSuggestAfterLength1PrefixTopTenDistance4(b *testing.B) {
+	benchmarkSuggestAfterPrefix(4, 1, b)
+}
+
+func BenchmarkSuggestAfterLength1PrefixTopTenDistance5(b *testing.B) {
+	benchmarkSuggestAfterPrefix(5, 1, b)
 }
 
 func BenchmarkSuggestAfterLength2PrefixTopTenDistance1(b *testing.B) {

@@ -74,15 +74,14 @@ func (t RadixTree) PrefixMatch(prefix string, limit int) []string {
 	return []string{}
 }
 
-// TODO: pack arr into a 64 bit int for d <= 5?
 type state struct {
 	offset int
-	arr    []int
+	arr    []int8
 }
 
-func (s state) isAccepting(wl int, d int) bool {
+func (s state) isAccepting(wl int, d int8) bool {
 	for i, x := range s.arr {
-		dist := wl - s.offset - i
+		dist := int8(wl - s.offset - i)
 		if dist <= d && dist >= x {
 			//fmt.Printf("[%v](%v,%v) with %v, %v [Accepting]\n", s, i, x, wl, d)
 			return true
@@ -92,24 +91,24 @@ func (s state) isAccepting(wl int, d int) bool {
 	return false
 }
 
-func newState(d int, offset int) *state {
-	arr := make([]int, 2*d+1)
+func newState(d int8, offset int) *state {
+	arr := make([]int8, 2*d+1)
 	for i := range arr {
-		arr[i] = d + 1
+		arr[i] = int8(d + 1)
 	}
 	return &state{offset: offset, arr: arr}
 }
 
 // diagonal in the actual NFA is offset + d. index into arr is d for
 // the main diagonal, so initial state is offset: -d, arr = [d+1, ... , d+1, 0, d+1, ..., d+1]
-func (s state) transition(w []rune, r rune, d int) (*state, bool) {
+func (s state) transition(w []rune, r rune, d int8) (*state, bool) {
 	ns := newState(d, s.offset+1)
 	isValid := false
 	for j := range ns.arr {
 		// Compute carry right
 		val := d + 1
 		for k := s.arr[j]; k < d+1; k++ {
-			if j+s.offset+k < len(w) && w[j+s.offset+k] == r {
+			if j+s.offset+int(k) < len(w) && w[j+s.offset+int(k)] == r {
 				if val > k {
 					//fmt.Printf("carrying %v right\n", k)
 					val = k
@@ -159,7 +158,7 @@ func pushRune(rs []rune, r rune) []rune {
 	return append(newrs, r)
 }
 
-func (t RadixTree) SuggestAfterPrefix(key string, np int, d int, n int) []string {
+func (t RadixTree) SuggestAfterPrefix(key string, np int, d int8, n int) []string {
 	runes, s := stringToRunes(key, np)
 	node := t.root
 	var ok bool
@@ -171,14 +170,14 @@ func (t RadixTree) SuggestAfterPrefix(key string, np int, d int, n int) []string
 	return suggest(node, s, d, n)
 }
 
-func (t RadixTree) Suggest(key string, d int, n int) []string {
+func (t RadixTree) Suggest(key string, d int8, n int) []string {
 	return suggest(t.root, key, d, n)
 }
 
-func suggest(root *node, key string, d int, n int) []string {
+func suggest(root *node, key string, d int8, n int) []string {
 	runes, _ := stringToRunes(key, len(key))
 	results := []string{}
-	initial := newState(d, -2*d)
+	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
 	stack := []frame{frame{n: root, s: initial, rs: []rune{}}}
 	for len(stack) > 0 {
