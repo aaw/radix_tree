@@ -1,5 +1,16 @@
 package radix_tree
 
+// TODO: API that supports prefixes/suffixes:
+// {match_prefix, no_prefix} x {suffixes, no_suffixes}
+// AfterExactPrefix x Suffixes
+
+// match_prefix:suffixes    : SuggestSuffixesAfterExactPrefix
+// match_prefix:no_suffixes : SuggestAfterExactPrefix
+// no_prefix:suffixes       : SuggestSuffixes
+// no_prefix:no_suffixes    : Suggest
+
+// TODO: make Suggest return key/value pairs
+
 import (
 	"unicode/utf8"
 )
