@@ -25,6 +25,7 @@ func NewTree() RadixTree {
 func (t *RadixTree) Get(key string) (string, bool) {
 	n := t.root
 	var ok bool
+	// TODO: split key into runes here
 	for i, r := range key {
 		if i < len(key)-1 {
 			if n, ok = n.child[r]; !ok {
@@ -41,6 +42,7 @@ func (t *RadixTree) Get(key string) (string, bool) {
 func (t *RadixTree) Set(key string, val string) {
 	// TODO: disallow key == "", since that will break this code.
 	n := t.root
+	// TODO: split key into runes
 	for i, r := range key {
 		if i < len(key)-1 {
 			if x, ok := n.child[r]; !ok {
@@ -59,6 +61,7 @@ func (t *RadixTree) Set(key string, val string) {
 func (t *RadixTree) Delete(key string) {
 	n := t.root
 	var ok bool
+	// TODO: split key into runes
 	for i, r := range key {
 		if i < len(key)-1 {
 			if n, ok = n.child[r]; !ok {
