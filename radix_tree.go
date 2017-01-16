@@ -73,10 +73,6 @@ func (t *RadixTree) Delete(key string) {
 	}
 }
 
-func (t RadixTree) PrefixMatch(prefix string, limit int) []string {
-	return []string{}
-}
-
 type state struct {
 	offset int
 	arr    []int8
