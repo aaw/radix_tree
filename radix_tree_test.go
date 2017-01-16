@@ -178,9 +178,11 @@ func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	}
 }
 
-func str(x []string) string {
-	z := make([]string, len(x))
-	copy(z, x)
+func keystr(x []KV) string {
+	z := []string{}
+	for _, y := range x {
+		z = append(z, y.key)
+	}
 	sort.Strings(z)
 	return strings.Join(z, " ")
 }
@@ -215,37 +217,37 @@ func TestSuggest(t *testing.T) {
 	for _, key := range data {
 		r.Set(key, key)
 	}
-	got = str(r.Suggest("foo", 0, unlimited))
+	got = keystr(r.Suggest("foo", 0, unlimited))
 	want = "foo"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-	got = str(r.Suggest("foo", 1, unlimited))
+	got = keystr(r.Suggest("foo", 1, unlimited))
 	want = "fo foo fooY fooZ fooa foob fooc"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-	got = str(r.Suggest("foo", 2, unlimited))
+	got = keystr(r.Suggest("foo", 2, unlimited))
 	want = "f fo foo fooY fooZ fooa fooaa fooab foob fooc fx"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-	got = str(r.Suggest("foo", 3, unlimited))
+	got = keystr(r.Suggest("foo", 3, unlimited))
 	want = "f fo foo fooY fooZ fooa fooaa fooaaZ fooaaa fooab foob fooc fx x"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-	got = str(r.Suggest("fooaaa", 3, unlimited))
+	got = keystr(r.Suggest("fooaaa", 3, unlimited))
 	want = "foo fooY fooZ fooa fooaa fooaaZ fooaaa fooaaaa fooaaaaY fooaaaaa fooaaaaaa fooaaac fooab foob fooc"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-	got = str(r.Suggest("foobbb", 3, unlimited))
+	got = keystr(r.Suggest("foobbb", 3, unlimited))
 	want = "foo fooY fooZ fooa fooaa fooaaZ fooaaa fooab foob fooc"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
-	got = str(r.Suggest("foobbb", 4, unlimited))
+	got = keystr(r.Suggest("foobbb", 4, unlimited))
 	want = "fo foo fooY fooZ fooa fooaa fooaaZ fooaaa fooaaaa fooaaac fooab foob fooc"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)

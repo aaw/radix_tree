@@ -169,25 +169,30 @@ func pushRune(rs []rune, r rune) []rune {
 	return append(newrs, r)
 }
 
-func (t RadixTree) SuggestAfterPrefix(key string, np int, d int8, n int) []string {
+type KV struct {
+	key   string
+	value string
+}
+
+func (t RadixTree) SuggestAfterPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
 	node := t.root
 	var ok bool
 	for _, r := range runes {
 		if node, ok = node.child[r]; !ok {
-			return []string{}
+			return []KV{}
 		}
 	}
 	return suggest(node, s, d, n)
 }
 
-func (t RadixTree) Suggest(key string, d int8, n int) []string {
+func (t RadixTree) Suggest(key string, d int8, n int) []KV {
 	return suggest(t.root, key, d, n)
 }
 
-func suggest(root *node, key string, d int8, n int) []string {
+func suggest(root *node, key string, d int8, n int) []KV {
 	runes, _ := stringToRunes(key, len(key))
-	results := []string{}
+	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
 	stack := []frame{frame{n: root, s: initial, rs: []rune{}}}
@@ -195,12 +200,12 @@ func suggest(root *node, key string, d int8, n int) []string {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		// fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
-		for r, _ := range f.n.vals {
+		for r, val := range f.n.vals {
 			// fmt.Printf("\nConsidering %v:%v...\n", string(f.rs), string(r))
 			// TODO: if isAccepting depends on len(key) like i think it does, push len(key) into state
 			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
 				//fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
-				results = append(results, string(pushRune(f.rs, r)))
+				results = append(results, KV{key: string(pushRune(f.rs, r)), value: val})
 				if len(results) >= n {
 					return results
 				}
