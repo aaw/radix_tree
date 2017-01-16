@@ -1,16 +1,5 @@
 package radix_tree
 
-// TODO: API that supports prefixes/suffixes:
-// {match_prefix, no_prefix} x {suffixes, no_suffixes}
-// AfterExactPrefix x Suffixes
-
-// match_prefix:suffixes    : SuggestSuffixesAfterExactPrefix
-// match_prefix:no_suffixes : SuggestAfterExactPrefix
-// no_prefix:suffixes       : SuggestSuffixes
-// no_prefix:no_suffixes    : Suggest
-
-// TODO: make Suggest return key/value pairs
-
 import (
 	"unicode/utf8"
 )
@@ -163,6 +152,7 @@ type frame struct {
 	rs []rune
 }
 
+// TODO: fully persistent stack here instead of copying array each time?
 func pushRune(rs []rune, r rune) []rune {
 	newrs := make([]rune, len(rs))
 	copy(newrs, rs)
@@ -174,7 +164,19 @@ type KV struct {
 	value string
 }
 
-func (t RadixTree) SuggestAfterPrefix(key string, np int, d int8, n int) []KV {
+func (t RadixTree) Suggest(key string, d int8, n int) []KV {
+	return suggest(t.root, key, d, n)
+}
+
+func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
+	return []KV{}
+}
+
+func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
+	return []KV{}
+}
+
+func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
 	node := t.root
 	var ok bool
@@ -184,10 +186,6 @@ func (t RadixTree) SuggestAfterPrefix(key string, np int, d int8, n int) []KV {
 		}
 	}
 	return suggest(node, s, d, n)
-}
-
-func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	return suggest(t.root, key, d, n)
 }
 
 func suggest(root *node, key string, d int8, n int) []KV {

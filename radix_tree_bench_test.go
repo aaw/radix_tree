@@ -72,7 +72,7 @@ func benchmarkSuggest(d int, b *testing.B) {
 	}
 }
 
-func benchmarkSuggestAfterPrefix(d int, p int, b *testing.B) {
+func benchmarkSuggestAfterExactPrefix(d int, p int, b *testing.B) {
 	ensureWords()
 	r := NewTree()
 	for _, word := range words {
@@ -80,7 +80,7 @@ func benchmarkSuggestAfterPrefix(d int, p int, b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r.SuggestAfterPrefix(suggest_data[i%len(suggest_data)], p, int8(d), 10)
+		r.SuggestAfterExactPrefix(suggest_data[i%len(suggest_data)], p, int8(d), 10)
 	}
 }
 
@@ -105,43 +105,43 @@ func BenchmarkSuggestTopTenDistance5(b *testing.B) {
 }
 
 func BenchmarkSuggestAfterLength1PrefixTopTenDistance1(b *testing.B) {
-	benchmarkSuggestAfterPrefix(1, 1, b)
+	benchmarkSuggestAfterExactPrefix(1, 1, b)
 }
 
 func BenchmarkSuggestAfterLength1PrefixTopTenDistance2(b *testing.B) {
-	benchmarkSuggestAfterPrefix(2, 1, b)
+	benchmarkSuggestAfterExactPrefix(2, 1, b)
 }
 
 func BenchmarkSuggestAfterLength1PrefixTopTenDistance3(b *testing.B) {
-	benchmarkSuggestAfterPrefix(3, 1, b)
+	benchmarkSuggestAfterExactPrefix(3, 1, b)
 }
 
 func BenchmarkSuggestAfterLength1PrefixTopTenDistance4(b *testing.B) {
-	benchmarkSuggestAfterPrefix(4, 1, b)
+	benchmarkSuggestAfterExactPrefix(4, 1, b)
 }
 
 func BenchmarkSuggestAfterLength1PrefixTopTenDistance5(b *testing.B) {
-	benchmarkSuggestAfterPrefix(5, 1, b)
+	benchmarkSuggestAfterExactPrefix(5, 1, b)
 }
 
 func BenchmarkSuggestAfterLength2PrefixTopTenDistance1(b *testing.B) {
-	benchmarkSuggestAfterPrefix(1, 2, b)
+	benchmarkSuggestAfterExactPrefix(1, 2, b)
 }
 
 func BenchmarkSuggestAfterLength2PrefixTopTenDistance2(b *testing.B) {
-	benchmarkSuggestAfterPrefix(2, 2, b)
+	benchmarkSuggestAfterExactPrefix(2, 2, b)
 }
 
 func BenchmarkSuggestAfterLength2PrefixTopTenDistance3(b *testing.B) {
-	benchmarkSuggestAfterPrefix(3, 2, b)
+	benchmarkSuggestAfterExactPrefix(3, 2, b)
 }
 
 func BenchmarkSuggestAfterLength2PrefixTopTenDistance4(b *testing.B) {
-	benchmarkSuggestAfterPrefix(4, 2, b)
+	benchmarkSuggestAfterExactPrefix(4, 2, b)
 }
 
 func BenchmarkSuggestAfterLength2PrefixTopTenDistance5(b *testing.B) {
-	benchmarkSuggestAfterPrefix(5, 2, b)
+	benchmarkSuggestAfterExactPrefix(5, 2, b)
 }
 
 func BenchmarkRadixTreeSet(b *testing.B) {
