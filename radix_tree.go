@@ -10,8 +10,7 @@ type RadixTree struct {
 
 type node struct {
 	child map[rune]*node
-	// TODO: store vals as []rune, run DecodeRuneInString at insertion?
-	vals map[rune]string
+	vals  map[rune]string
 }
 
 func newNode() *node {
@@ -22,12 +21,27 @@ func NewTree() RadixTree {
 	return RadixTree{root: newNode()}
 }
 
+// Read at most the first n runes from the string, return those
+// runes in an array and the remaining string.
+func stringToRunes(s string, n int) ([]rune, string) {
+	rs := []rune{}
+	for i, w := 0, 0; i < len(s); i += w {
+		if len(rs) >= n {
+			return rs, s[i:]
+		}
+		r, width := utf8.DecodeRuneInString(s[i:])
+		rs = append(rs, r)
+		w = width
+	}
+	return rs, ""
+}
+
 func (t *RadixTree) Get(key string) (string, bool) {
 	n := t.root
 	var ok bool
-	// TODO: split key into runes here
-	for i, r := range key {
-		if i < len(key)-1 {
+	runes, _ := stringToRunes(key, len(key))
+	for i, r := range runes {
+		if i < len(runes)-1 {
 			if n, ok = n.child[r]; !ok {
 				return "", false
 			}
@@ -42,9 +56,9 @@ func (t *RadixTree) Get(key string) (string, bool) {
 func (t *RadixTree) Set(key string, val string) {
 	// TODO: disallow key == "", since that will break this code.
 	n := t.root
-	// TODO: split key into runes
-	for i, r := range key {
-		if i < len(key)-1 {
+	runes, _ := stringToRunes(key, len(key))
+	for i, r := range runes {
+		if i < len(runes)-1 {
 			if x, ok := n.child[r]; !ok {
 				z := newNode()
 				n.child[r] = z
@@ -61,9 +75,9 @@ func (t *RadixTree) Set(key string, val string) {
 func (t *RadixTree) Delete(key string) {
 	n := t.root
 	var ok bool
-	// TODO: split key into runes
-	for i, r := range key {
-		if i < len(key)-1 {
+	runes, _ := stringToRunes(key, len(key))
+	for i, r := range runes {
+		if i < len(runes)-1 {
 			if n, ok = n.child[r]; !ok {
 				return
 			}
@@ -130,32 +144,24 @@ func (s state) transition(w []rune, r rune, d int8) (*state, bool) {
 	return ns, isValid
 }
 
-// Read at most the first n runes from the string, return those
-// runes in an array and the remaining string.
-func stringToRunes(s string, n int) ([]rune, string) {
-	rs := []rune{}
-	for i, w := 0, 0; i < len(s); i += w {
-		if len(rs) >= n {
-			return rs, s[i:]
-		}
-		r, width := utf8.DecodeRuneInString(s[i:])
-		rs = append(rs, r)
-		w = width
-	}
-	return rs, ""
-}
-
 type frame struct {
 	n  *node  // child: map[rune]*node, vals: map[rune]string
 	s  *state // offset, arr
-	rs []rune
+	rp *runePath
 }
 
-// TODO: fully persistent stack here instead of copying array each time?
-func pushRune(rs []rune, r rune) []rune {
-	newrs := make([]rune, len(rs))
-	copy(newrs, rs)
-	return append(newrs, r)
+type runePath struct {
+	parent *runePath
+	value  rune
+}
+
+func walkRunePath(node *runePath) []rune {
+	runes := []rune{}
+	for node != nil {
+		runes = append([]rune{node.value}, runes...)
+		node = node.parent
+	}
+	return runes
 }
 
 type KV struct {
@@ -177,6 +183,7 @@ func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
 
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
+	//TODO: need to append runes onto results from suggest...
 	node := t.root
 	var ok bool
 	for _, r := range runes {
@@ -192,7 +199,7 @@ func suggest(root *node, key string, d int8, n int) []KV {
 	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
-	stack := []frame{frame{n: root, s: initial, rs: []rune{}}}
+	stack := []frame{frame{n: root, s: initial, rp: nil}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
@@ -202,7 +209,7 @@ func suggest(root *node, key string, d int8, n int) []KV {
 			// TODO: if isAccepting depends on len(key) like i think it does, push len(key) into state
 			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
 				//fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
-				results = append(results, KV{key: string(pushRune(f.rs, r)), value: val})
+				results = append(results, KV{key: string(append(walkRunePath(f.rp), r)), value: val})
 				if len(results) >= n {
 					return results
 				}
@@ -211,10 +218,9 @@ func suggest(root *node, key string, d int8, n int) []KV {
 		for r, node := range f.n.child {
 			if ns, ok := f.s.transition(runes, r, d); ok {
 				//fmt.Printf("Transition: %v:%v\n", string(f.rs), string(r))
-				stack = append(stack, frame{n: node, s: ns, rs: pushRune(f.rs, r)})
+				stack = append(stack, frame{n: node, s: ns, rp: &runePath{parent: f.rp, value: r}})
 			}
 		}
 	}
-	// TODO: return key, value pairs here.
 	return results
 }
