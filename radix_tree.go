@@ -54,7 +54,9 @@ func (t *RadixTree) Get(key string) (string, bool) {
 }
 
 func (t *RadixTree) Set(key string, val string) {
-	// TODO: disallow key == "", since that will break this code.
+	if len(key) == 0 {
+		panic("Empty key not allowed.")
+	}
 	n := t.root
 	runes, _ := stringToRunes(key, len(key))
 	for i, r := range runes {
@@ -170,7 +172,7 @@ type KV struct {
 }
 
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	return suggest(t.root, key, d, n)
+	return suggest(t.root, nil, key, d, n)
 }
 
 func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -183,23 +185,24 @@ func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
 
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
-	//TODO: need to append runes onto results from suggest...
+	var rp *runePath
 	node := t.root
 	var ok bool
 	for _, r := range runes {
 		if node, ok = node.child[r]; !ok {
 			return []KV{}
 		}
+		rp = &runePath{parent: rp, value: r}
 	}
-	return suggest(node, s, d, n)
+	return suggest(node, rp, s, d, n)
 }
 
-func suggest(root *node, key string, d int8, n int) []KV {
+func suggest(root *node, rp *runePath, key string, d int8, n int) []KV {
 	runes, _ := stringToRunes(key, len(key))
 	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
-	stack := []frame{frame{n: root, s: initial, rp: nil}}
+	stack := []frame{frame{n: root, s: initial, rp: rp}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
