@@ -186,15 +186,15 @@ func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
 	var rp *runePath
-	node := t.root
 	var ok bool
+	curr := t.root
 	for _, r := range runes {
-		if node, ok = node.child[r]; !ok {
+		if curr, ok = curr.child[r]; !ok {
 			return []KV{}
 		}
 		rp = &runePath{parent: rp, value: r}
 	}
-	return suggest(node, rp, s, d, n)
+	return suggest(curr, rp, s, d, n)
 }
 
 func suggest(root *node, rp *runePath, key string, d int8, n int) []KV {
@@ -202,13 +202,17 @@ func suggest(root *node, rp *runePath, key string, d int8, n int) []KV {
 	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
+	if initial.isAccepting(len(key), d) {
+		// TODO: need to get the value here as well. But maybe should be doing something
+		// else entirely, since this creates and asymmetry with Get(""), Set("")
+	}
 	stack := []frame{frame{n: root, s: initial, rp: rp}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		// fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
 		for r, val := range f.n.vals {
-			// fmt.Printf("\nConsidering %v:%v...\n", string(f.rs), string(r))
+			//fmt.Printf("\nConsidering %v:%v...\n", string(walkRunePath(f.rp)), string(r))
 			// TODO: if isAccepting depends on len(key) like i think it does, push len(key) into state
 			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
 				//fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
