@@ -8,10 +8,14 @@ type RadixTree struct {
 	root *node
 }
 
+type KV struct {
+	key   string
+	value string
+}
+
 type node struct {
 	child map[rune]*node
-	value string
-	valid bool
+	data  *KV
 }
 
 func newNode() *node {
@@ -46,7 +50,11 @@ func (t *RadixTree) Get(key string) (string, bool) {
 			return "", false
 		}
 	}
-	return n.value, n.valid
+	if n.data != nil {
+		return n.data.value, true
+	} else {
+		return "", false
+	}
 }
 
 func (t *RadixTree) Set(key string, val string) {
@@ -62,9 +70,10 @@ func (t *RadixTree) Set(key string, val string) {
 		}
 
 	}
-	n.value, n.valid = val, true
+	n.data = &KV{key: key, value: val}
 }
 
+// TODO: clean up unused paths here?
 func (t *RadixTree) Delete(key string) {
 	n := t.root
 	var ok bool
@@ -74,7 +83,7 @@ func (t *RadixTree) Delete(key string) {
 			return
 		}
 	}
-	n.value, n.valid = "", false
+	n.data = nil
 }
 
 type state struct {
@@ -135,32 +144,12 @@ func (s state) transition(w []rune, r rune, d int8) (*state, bool) {
 }
 
 type frame struct {
-	n  *node  // child: map[rune]*node, vals: map[rune]string
-	s  *state // offset, arr
-	rp *runePath
-}
-
-type runePath struct {
-	parent *runePath
-	value  rune
-}
-
-func walkRunePath(node *runePath) []rune {
-	runes := []rune{}
-	for node != nil {
-		runes = append([]rune{node.value}, runes...)
-		node = node.parent
-	}
-	return runes
-}
-
-type KV struct {
-	key   string
-	value string
+	n *node  // child: map[rune]*node, vals: map[rune]string
+	s *state // offset, arr
 }
 
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	return suggest(t.root, nil, key, d, n)
+	return suggest(t.root, key, d, n)
 }
 
 func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -173,30 +162,28 @@ func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
 
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
-	var rp *runePath
 	var ok bool
 	curr := t.root
 	for _, r := range runes {
 		if curr, ok = curr.child[r]; !ok {
 			return []KV{}
 		}
-		rp = &runePath{parent: rp, value: r}
 	}
-	return suggest(curr, rp, s, d, n)
+	return suggest(curr, s, d, n)
 }
 
-func suggest(root *node, rp *runePath, key string, d int8, n int) []KV {
+func suggest(root *node, key string, d int8, n int) []KV {
 	runes, _ := stringToRunes(key, len(key))
 	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
-	stack := []frame{frame{n: root, s: initial, rp: rp}}
+	stack := []frame{frame{n: root, s: initial}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		// fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
-		if f.n.valid && f.s.isAccepting(len(key), d) {
-			results = append(results, KV{key: string(walkRunePath(f.rp)), value: f.n.value})
+		if f.n.data != nil && f.s.isAccepting(len(key), d) {
+			results = append(results, *f.n.data)
 			if len(results) >= n {
 				return results
 			}
@@ -204,7 +191,7 @@ func suggest(root *node, rp *runePath, key string, d int8, n int) []KV {
 		for r, node := range f.n.child {
 			if ns, ok := f.s.transition(runes, r, d); ok {
 				//fmt.Printf("Transition: %v:%v\n", string(f.rs), string(r))
-				stack = append(stack, frame{n: node, s: ns, rp: &runePath{parent: f.rp, value: r}})
+				stack = append(stack, frame{n: node, s: ns})
 			}
 		}
 	}
