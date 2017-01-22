@@ -149,7 +149,13 @@ type frame struct {
 }
 
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	return suggest(t.root, key, d, n)
+	results := []KV{}
+	process := func(nd *node) bool {
+		results = append(results, *nd.data)
+		return len(results) < n
+	}
+	suggest(process, t.root, key, d, n)
+	return results
 }
 
 func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -164,36 +170,37 @@ func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []
 	runes, s := stringToRunes(key, np)
 	var ok bool
 	curr := t.root
+	results := []KV{}
 	for _, r := range runes {
 		if curr, ok = curr.child[r]; !ok {
-			return []KV{}
+			return results
 		}
 	}
-	return suggest(curr, s, d, n)
+	process := func(nd *node) bool {
+		results = append(results, *nd.data)
+		return len(results) < n
+	}
+	suggest(process, curr, s, d, n)
+	return results
 }
 
-func suggest(root *node, key string, d int8, n int) []KV {
+func suggest(process func(*node) bool, root *node, key string, d int8, n int) {
 	runes, _ := stringToRunes(key, len(key))
-	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
 	stack := []frame{frame{n: root, s: initial}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
-		// fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
 		if f.n.data != nil && f.s.isAccepting(len(key), d) {
-			results = append(results, *f.n.data)
-			if len(results) >= n {
-				return results
+			if !process(f.n) {
+				return
 			}
 		}
 		for r, node := range f.n.child {
 			if ns, ok := f.s.transition(runes, r, d); ok {
-				//fmt.Printf("Transition: %v:%v\n", string(f.rs), string(r))
 				stack = append(stack, frame{n: node, s: ns})
 			}
 		}
 	}
-	return results
 }
