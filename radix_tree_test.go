@@ -284,21 +284,21 @@ func TestSuggestAfterExactPrefix(t *testing.T) {
 	for _, key := range data {
 		r.Set(key, key)
 	}
-	/*	got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 0, unlimited))
-		want = "aafoo"
-		if got != want {
-			t.Errorf("Want '%v', got '%v'\n", want, got)
-		}
-		got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 1, unlimited))
-		want = "aaafoo aafo aafoo aafoox aafox"
-		if got != want {
-			t.Errorf("Want '%v', got '%v'\n", want, got)
-		}
-		got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 2, unlimited))
-		want = "aaafoo aaf aafo aafoo aafoox aafooxx aafox aafx aafxx"
-		if got != want {
-			t.Errorf("Want '%v', got '%v'\n", want, got)
-		}*/
+	got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 0, unlimited))
+	want = "aafoo"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 1, unlimited))
+	want = "aaafoo aafo aafoo aafoox aafox"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 2, unlimited))
+	want = "aaafoo aaf aafo aafoo aafoox aafooxx aafox aafx aafxx"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
 	got = keystr(r.SuggestAfterExactPrefix("aafoo", 2, 3, unlimited))
 	want = "aa aaafoo aaf aafo aafoo aafoox aafooxx aafooxxx aafox aafx aafxx"
 	if got != want {

@@ -10,11 +10,12 @@ type RadixTree struct {
 
 type node struct {
 	child map[rune]*node
-	vals  map[rune]string
+	value string
+	valid bool
 }
 
 func newNode() *node {
-	return &node{child: make(map[rune]*node), vals: make(map[rune]string)}
+	return &node{child: make(map[rune]*node)}
 }
 
 func NewTree() RadixTree {
@@ -40,53 +41,40 @@ func (t *RadixTree) Get(key string) (string, bool) {
 	n := t.root
 	var ok bool
 	runes, _ := stringToRunes(key, len(key))
-	for i, r := range runes {
-		if i < len(runes)-1 {
-			if n, ok = n.child[r]; !ok {
-				return "", false
-			}
-		} else {
-			val, ok := n.vals[r]
-			return val, ok
+	for _, r := range runes {
+		if n, ok = n.child[r]; !ok {
+			return "", false
 		}
 	}
-	return "", false
+	return n.value, n.valid
 }
 
 func (t *RadixTree) Set(key string, val string) {
-	if len(key) == 0 {
-		panic("Empty key not allowed.")
-	}
 	n := t.root
 	runes, _ := stringToRunes(key, len(key))
-	for i, r := range runes {
-		if i < len(runes)-1 {
-			if x, ok := n.child[r]; !ok {
-				z := newNode()
-				n.child[r] = z
-				n = z
-			} else {
-				n = x
-			}
+	for _, r := range runes {
+		if x, ok := n.child[r]; !ok {
+			z := newNode()
+			n.child[r] = z
+			n = z
 		} else {
-			n.vals[r] = val
+			n = x
 		}
+
 	}
+	n.value, n.valid = val, true
 }
 
 func (t *RadixTree) Delete(key string) {
 	n := t.root
 	var ok bool
 	runes, _ := stringToRunes(key, len(key))
-	for i, r := range runes {
-		if i < len(runes)-1 {
-			if n, ok = n.child[r]; !ok {
-				return
-			}
-		} else {
-			delete(n.vals, r)
+	for _, r := range runes {
+		if n, ok = n.child[r]; !ok {
+			return
 		}
 	}
+	n.value, n.valid = "", false
 }
 
 type state struct {
@@ -202,24 +190,15 @@ func suggest(root *node, rp *runePath, key string, d int8, n int) []KV {
 	results := []KV{}
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
-	if initial.isAccepting(len(key), d) {
-		// TODO: need to get the value here as well. But maybe should be doing something
-		// else entirely, since this creates and asymmetry with Get(""), Set("")
-	}
 	stack := []frame{frame{n: root, s: initial, rp: rp}}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		// fmt.Printf("Stack size: %v, current frame: %v\n", len(stack), f)
-		for r, val := range f.n.vals {
-			//fmt.Printf("\nConsidering %v:%v...\n", string(walkRunePath(f.rp)), string(r))
-			// TODO: if isAccepting depends on len(key) like i think it does, push len(key) into state
-			if ns, ok := f.s.transition(runes, r, d); ok && ns.isAccepting(len(key), d) {
-				//fmt.Printf("Accepting: %v:%v\n", string(f.rs), string(r))
-				results = append(results, KV{key: string(append(walkRunePath(f.rp), r)), value: val})
-				if len(results) >= n {
-					return results
-				}
+		if f.n.valid && f.s.isAccepting(len(key), d) {
+			results = append(results, KV{key: string(walkRunePath(f.rp)), value: f.n.value})
+			if len(results) >= n {
+				return results
 			}
 		}
 		for r, node := range f.n.child {
