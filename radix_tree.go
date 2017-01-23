@@ -148,53 +148,76 @@ type frame struct {
 	s *state // offset, arr
 }
 
-func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	results := []KV{}
-	process := func(nd *node) bool {
-		results = append(results, *nd.data)
-		return len(results) < n
+func appendKVs(n *node, results *[]KV, limit int) bool {
+	if n.data != nil {
+		*results = append(*results, *n.data)
 	}
-	suggest(process, t.root, key, d, n)
-	return results
+	return len(*results) < limit
 }
 
-func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
-	return []KV{}
+func appendKVsAndDescend(n *node, results *[]KV, limit int) bool {
+	stack := []*node{n}
+	for len(stack) > 0 {
+		var x *node
+		x, stack = stack[len(stack)-1], stack[:len(stack)-1]
+		if x.data != nil {
+			*results = append(*results, *x.data)
+			if len(*results) >= limit {
+				return false
+			}
+			for _, child := range x.child {
+				stack = append(stack, child)
+			}
+		}
+	}
+	return true
+}
+
+func (t RadixTree) Suggest(key string, d int8, n int) []KV {
+	return suggest(appendKVs, t.root, key, d, n)
 }
 
 func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
-	return []KV{}
+	return suggest(appendKVsAndDescend, t.root, key, d, n)
 }
 
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
 	var ok bool
 	curr := t.root
-	results := []KV{}
 	for _, r := range runes {
 		if curr, ok = curr.child[r]; !ok {
-			return results
+			return []KV{}
 		}
 	}
-	process := func(nd *node) bool {
-		results = append(results, *nd.data)
-		return len(results) < n
-	}
-	suggest(process, curr, s, d, n)
-	return results
+	return suggest(appendKVs, curr, s, d, n)
 }
 
-func suggest(process func(*node) bool, root *node, key string, d int8, n int) {
+func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
+	runes, s := stringToRunes(key, np)
+	var ok bool
+	curr := t.root
+	for _, r := range runes {
+		if curr, ok = curr.child[r]; !ok {
+			return []KV{}
+		}
+	}
+	return suggest(appendKVsAndDescend, curr, s, d, n)
+}
+
+func suggest(process func(*node, *[]KV, int) bool, root *node, key string, d int8, n int) []KV {
 	runes, _ := stringToRunes(key, len(key))
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
 	stack := []frame{frame{n: root, s: initial}}
+	results := []KV{}
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
-		if f.n.data != nil && f.s.isAccepting(len(key), d) {
-			if !process(f.n) {
-				return
+		if f.s.isAccepting(len(key), d) {
+			process(f.n, &results, n)
+			if len(results) >= n {
+				return results
 			}
 		}
 		for r, node := range f.n.child {
@@ -203,4 +226,5 @@ func suggest(process func(*node) bool, root *node, key string, d int8, n int) {
 			}
 		}
 	}
+	return results
 }
