@@ -165,9 +165,9 @@ func appendKVsAndDescend(n *node, results *[]KV, limit int) bool {
 			if len(*results) >= limit {
 				return false
 			}
-			for _, child := range x.child {
-				stack = append(stack, child)
-			}
+		}
+		for _, child := range x.child {
+			stack = append(stack, child)
 		}
 	}
 	return true

@@ -255,7 +255,7 @@ func TestSuggest(t *testing.T) {
 }
 
 func TestSuggestWithLimit(t *testing.T) {
-
+	// TODO: fill this out, add *WithLimit for all forms of suggest*
 }
 
 func TestSuggestAfterExactPrefix(t *testing.T) {
@@ -307,11 +307,44 @@ func TestSuggestAfterExactPrefix(t *testing.T) {
 }
 
 func TestSuggestSuffixes(t *testing.T) {
-
+	data := []string{
+		"",
+		"afoo",
+		"f",
+		"fo",
+		"foo",
+		"fooey",
+		"fooeyz",
+		"fooeyzz",
+		"foox",
+		"fooxx",
+		"fooxxx",
+		"fooz",
+		"fox",
+		"fx",
+		"fxx",
+		"gog",
+		"gogx",
+		"gogy",
+		"gogyy",
+		"gogyyy",
+	}
+	r := NewTree()
+	var got, want string
+	unlimited := len(data) + 1
+	for _, key := range data {
+		r.Set(key, key)
+	}
+	got = keystr(r.SuggestSuffixes("foo", 0, unlimited))
+	want = "foo fooey fooeyz fooeyzz foox fooxx fooxxx fooz"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	// TODO: finish these examples
 }
 
 func TestSuggestSuffixesAfterExactPrefix(t *testing.T) {
-
+	// TODO: fill this out
 }
 
 func editDistance(s string, t string) int {
