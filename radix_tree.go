@@ -148,13 +148,21 @@ type frame struct {
 	s *state // offset, arr
 }
 
-func appendKVs(n *node, results *[]KV, limit int) {
+type strategy interface {
+	processKVs(n *node, results *[]KV, limit int)
+	exploreAcceptingStates() bool
+}
+
+type doNotExpandSuffixes struct{}
+type expandSuffixes struct{}
+
+func (x doNotExpandSuffixes) processKVs(n *node, results *[]KV, limit int) {
 	if n.data != nil {
 		*results = append(*results, *n.data)
 	}
 }
 
-func appendKVsAndDescend(n *node, results *[]KV, limit int) {
+func (x expandSuffixes) processKVs(n *node, results *[]KV, limit int) {
 	stack := []*node{n}
 	for len(stack) > 0 {
 		var x *node
@@ -171,12 +179,16 @@ func appendKVsAndDescend(n *node, results *[]KV, limit int) {
 	}
 }
 
+func (x doNotExpandSuffixes) exploreAcceptingStates() bool { return true }
+
+func (x expandSuffixes) exploreAcceptingStates() bool { return false }
+
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	return suggest(appendKVs, t.root, key, d, n, true)
+	return suggest(doNotExpandSuffixes{}, t.root, key, d, n)
 }
 
 func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
-	return suggest(appendKVsAndDescend, t.root, key, d, n, false)
+	return suggest(expandSuffixes{}, t.root, key, d, n)
 }
 
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -188,7 +200,7 @@ func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []
 			return []KV{}
 		}
 	}
-	return suggest(appendKVs, curr, s, d, n, true)
+	return suggest(doNotExpandSuffixes{}, curr, s, d, n)
 }
 
 func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -200,10 +212,10 @@ func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n
 			return []KV{}
 		}
 	}
-	return suggest(appendKVsAndDescend, curr, s, d, n, false)
+	return suggest(expandSuffixes{}, curr, s, d, n)
 }
 
-func suggest(process func(*node, *[]KV, int), root *node, key string, d int8, n int, exploreAccepting bool) []KV {
+func suggest(s strategy, root *node, key string, d int8, n int) []KV {
 	runes, _ := stringToRunes(key, len(key))
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
@@ -213,11 +225,11 @@ func suggest(process func(*node, *[]KV, int), root *node, key string, d int8, n 
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
 		if f.s.isAccepting(len(key), d) {
-			process(f.n, &results, n)
+			s.processKVs(f.n, &results, n)
 			if len(results) >= n {
 				break
 			}
-			if !exploreAccepting {
+			if !s.exploreAcceptingStates() {
 				continue
 			}
 		}
