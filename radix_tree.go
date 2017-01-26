@@ -148,14 +148,13 @@ type frame struct {
 	s *state // offset, arr
 }
 
-func appendKVs(n *node, results *[]KV, limit int) bool {
+func appendKVs(n *node, results *[]KV, limit int) {
 	if n.data != nil {
 		*results = append(*results, *n.data)
 	}
-	return len(*results) < limit
 }
 
-func appendKVsAndDescend(n *node, results *[]KV, limit int) bool {
+func appendKVsAndDescend(n *node, results *[]KV, limit int) {
 	stack := []*node{n}
 	for len(stack) > 0 {
 		var x *node
@@ -163,14 +162,13 @@ func appendKVsAndDescend(n *node, results *[]KV, limit int) bool {
 		if x.data != nil {
 			*results = append(*results, *x.data)
 			if len(*results) >= limit {
-				return false
+				return
 			}
 		}
 		for _, child := range x.child {
 			stack = append(stack, child)
 		}
 	}
-	return true
 }
 
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
@@ -205,7 +203,7 @@ func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n
 	return suggest(appendKVsAndDescend, curr, s, d, n, false)
 }
 
-func suggest(process func(*node, *[]KV, int) bool, root *node, key string, d int8, n int, exploreAccepting bool) []KV {
+func suggest(process func(*node, *[]KV, int), root *node, key string, d int8, n int, exploreAccepting bool) []KV {
 	runes, _ := stringToRunes(key, len(key))
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
@@ -214,10 +212,10 @@ func suggest(process func(*node, *[]KV, int) bool, root *node, key string, d int
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
-		//fmt.Printf("[%v] : %v\n", key, f.n.data)
 		if f.s.isAccepting(len(key), d) {
-			if !process(f.n, &results, n) { // TODO: don't return bool from process
-				return results
+			process(f.n, &results, n)
+			if len(results) >= n {
+				break
 			}
 			if !exploreAccepting {
 				continue

@@ -309,8 +309,8 @@ func TestSuggestAfterExactPrefix(t *testing.T) {
 func TestSuggestSuffixes(t *testing.T) {
 	data := []string{
 		"", "afoo", "f", "fo", "foo", "fooey", "fooeyz", "fooeyzz", "foox",
-		"fooxx", "fooxxx", "fooz", "fox", "fx", "fxx", "gog", "gogx",
-		"gogy", "gogyy", "gogyyy",
+		"fooxx", "fooxxx", "fooxxxaaaaa", "fooz", "fox", "fx", "fxx", "gog",
+		"gogx", "gogy", "gogyy", "gogyyy",
 	}
 	r := NewTree()
 	var got, want string
@@ -318,13 +318,23 @@ func TestSuggestSuffixes(t *testing.T) {
 	for _, key := range data {
 		r.Set(key, key)
 	}
-	/*got = keystr(r.SuggestSuffixes("foo", 0, unlimited))
-	want = "foo fooey fooeyz fooeyzz foox fooxx fooxxx fooz"
+	got = keystr(r.SuggestSuffixes("foo", 0, unlimited))
+	want = "foo fooey fooeyz fooeyzz foox fooxx fooxxx fooxxxaaaaa fooz"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
-	}*/
+	}
 	got = keystr(r.SuggestSuffixes("foo", 1, unlimited))
-	want = "afoo fo foo fooey fooeyz fooeyzz foox fooxx fooxxx fooz fox"
+	want = "afoo fo foo fooey fooeyz fooeyzz foox fooxx fooxxx fooxxxaaaaa fooz fox"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestSuffixes("foo", 2, unlimited))
+	want = "afoo f fo foo fooey fooeyz fooeyzz foox fooxx fooxxx fooxxxaaaaa fooz fox fx fxx gog gogx gogy gogyy gogyyy"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestSuffixes("foo", 3, unlimited))
+	want = " afoo f fo foo fooey fooeyz fooeyzz foox fooxx fooxxx fooxxxaaaaa fooz fox fx fxx gog gogx gogy gogyy gogyyy"
 	if got != want {
 		t.Errorf("Want '%v', got '%v'\n", want, got)
 	}
