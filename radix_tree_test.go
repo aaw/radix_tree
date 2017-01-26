@@ -341,7 +341,37 @@ func TestSuggestSuffixes(t *testing.T) {
 }
 
 func TestSuggestSuffixesAfterExactPrefix(t *testing.T) {
-	// TODO: fill this out
+	data := []string{
+		"foo", "xxxfoo", "xxxgoo", "xyyfoo", "xyzfoo", "xyzfoox", "xyzfooxx",
+		"xyzfooxxxxxx", "xyzgo", "xyzgog", "xyzgogxxxxx", "xyzgoo", "xyzgooxxxx",
+		"xyzxxx", "xyzxxxxxxxxxx", "xyxfoo",
+	}
+	r := NewTree()
+	var got, want string
+	unlimited := len(data) + 1
+	for _, key := range data {
+		r.Set(key, key)
+	}
+	got = keystr(r.SuggestSuffixesAfterExactPrefix("xyzfoo", 3, 0, unlimited))
+	want = "xyzfoo xyzfoox xyzfooxx xyzfooxxxxxx"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestSuffixesAfterExactPrefix("xyzfoo", 3, 1, unlimited))
+	want = "xyzfoo xyzfoox xyzfooxx xyzfooxxxxxx xyzgoo xyzgooxxxx"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestSuffixesAfterExactPrefix("xyzfoo", 3, 2, unlimited))
+	want = "xyzfoo xyzfoox xyzfooxx xyzfooxxxxxx xyzgo xyzgog xyzgogxxxxx xyzgoo xyzgooxxxx"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
+	got = keystr(r.SuggestSuffixesAfterExactPrefix("xyzfoo", 3, 3, unlimited))
+	want = "xyzfoo xyzfoox xyzfooxx xyzfooxxxxxx xyzgo xyzgog xyzgogxxxxx xyzgoo xyzgooxxxx xyzxxx xyzxxxxxxxxxx"
+	if got != want {
+		t.Errorf("Want '%v', got '%v'\n", want, got)
+	}
 }
 
 func editDistance(s string, t string) int {
