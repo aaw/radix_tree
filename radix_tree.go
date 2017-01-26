@@ -144,7 +144,7 @@ func (s state) transition(w []rune, r rune, d int8) (*state, bool) {
 }
 
 type frame struct {
-	n *node  // child: map[rune]*node, vals: map[rune]string
+	n *node  // child: map[rune]*node, data: *KV
 	s *state // offset, arr
 }
 
@@ -174,11 +174,11 @@ func appendKVsAndDescend(n *node, results *[]KV, limit int) bool {
 }
 
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
-	return suggest(appendKVs, t.root, key, d, n)
+	return suggest(appendKVs, t.root, key, d, n, true)
 }
 
 func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
-	return suggest(appendKVsAndDescend, t.root, key, d, n)
+	return suggest(appendKVsAndDescend, t.root, key, d, n, false)
 }
 
 func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -190,7 +190,7 @@ func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []
 			return []KV{}
 		}
 	}
-	return suggest(appendKVs, curr, s, d, n)
+	return suggest(appendKVs, curr, s, d, n, true)
 }
 
 func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
@@ -202,10 +202,10 @@ func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n
 			return []KV{}
 		}
 	}
-	return suggest(appendKVsAndDescend, curr, s, d, n)
+	return suggest(appendKVsAndDescend, curr, s, d, n, false)
 }
 
-func suggest(process func(*node, *[]KV, int) bool, root *node, key string, d int8, n int) []KV {
+func suggest(process func(*node, *[]KV, int) bool, root *node, key string, d int8, n int, exploreAccepting bool) []KV {
 	runes, _ := stringToRunes(key, len(key))
 	initial := newState(d, int(-2*d))
 	initial.arr[2*d] = 0
@@ -214,10 +214,13 @@ func suggest(process func(*node, *[]KV, int) bool, root *node, key string, d int
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
+		//fmt.Printf("[%v] : %v\n", key, f.n.data)
 		if f.s.isAccepting(len(key), d) {
-			process(f.n, &results, n)
-			if len(results) >= n {
+			if !process(f.n, &results, n) { // TODO: don't return bool from process
 				return results
+			}
+			if !exploreAccepting {
+				continue
 			}
 		}
 		for r, node := range f.n.child {
