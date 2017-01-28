@@ -149,20 +149,20 @@ type frame struct {
 }
 
 type strategy interface {
-	processKVs(n *node, results *[]KV, limit int)
-	exploreAcceptingStates() bool
+	processAcceptingNode(n *node, results *[]KV, limit int)
+	keepGoingAfterAccept() bool
 }
 
 type doNotExpandSuffixes struct{}
 type expandSuffixes struct{}
 
-func (x doNotExpandSuffixes) processKVs(n *node, results *[]KV, limit int) {
+func (x doNotExpandSuffixes) processAcceptingNode(n *node, results *[]KV, limit int) {
 	if n.data != nil {
 		*results = append(*results, *n.data)
 	}
 }
 
-func (x expandSuffixes) processKVs(n *node, results *[]KV, limit int) {
+func (x expandSuffixes) processAcceptingNode(n *node, results *[]KV, limit int) {
 	stack := []*node{n}
 	for len(stack) > 0 {
 		var x *node
@@ -179,9 +179,9 @@ func (x expandSuffixes) processKVs(n *node, results *[]KV, limit int) {
 	}
 }
 
-func (x doNotExpandSuffixes) exploreAcceptingStates() bool { return true }
+func (x doNotExpandSuffixes) keepGoingAfterAccept() bool { return true }
 
-func (x expandSuffixes) exploreAcceptingStates() bool { return false }
+func (x expandSuffixes) keepGoingAfterAccept() bool { return false }
 
 func (t RadixTree) Suggest(key string, d int8, n int) []KV {
 	return suggest(doNotExpandSuffixes{}, t.root, key, d, n)
@@ -224,12 +224,12 @@ func suggest(s strategy, root *node, key string, d int8, n int) []KV {
 	for len(stack) > 0 {
 		var f frame
 		f, stack = stack[len(stack)-1], stack[:len(stack)-1]
-		if f.s.isAccepting(len(key), d) {
-			s.processKVs(f.n, &results, n)
+		if f.s.isAccepting(len(runes), d) {
+			s.processAcceptingNode(f.n, &results, n)
 			if len(results) >= n {
 				break
 			}
-			if !s.exploreAcceptingStates() {
+			if !s.keepGoingAfterAccept() {
 				continue
 			}
 		}

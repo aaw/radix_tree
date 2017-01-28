@@ -1,6 +1,7 @@
 package radix_tree
 
 import (
+	//	"fmt"
 	"math/rand"
 	"sort"
 	"strings"
@@ -374,17 +375,17 @@ func TestSuggestSuffixesAfterExactPrefix(t *testing.T) {
 	}
 }
 
-func editDistance(s string, t string) int {
+func editDistance(s string, t string) int8 {
 	rs, _ := stringToRunes(s, len(s))
-	rt, _ := stringToRunes(t, len(s))
+	rt, _ := stringToRunes(t, len(t))
 	return editDistanceHelper(rs, rt)
 }
 
-func editDistanceHelper(s []rune, t []rune) int {
+func editDistanceHelper(s []rune, t []rune) int8 {
 	if len(s) == 0 {
-		return len(t)
+		return int8(len(t))
 	} else if len(t) == 0 {
-		return len(s)
+		return int8(len(s))
 	} else if s[len(s)-1] == t[len(t)-1] {
 		return editDistanceHelper(s[:len(s)-1], t[:len(t)-1])
 	} else {
@@ -402,30 +403,71 @@ func editDistanceHelper(s []rune, t []rune) int {
 	}
 }
 
-/*
-func allStringsWithinEditDistance(needle string, haystack []string, d int) {
-	for _, key := range haystack {
-
+// Start with a seed string of length k, repeatedly select a sample string,
+// choose an edit to apply (delete, substitute, insert) and return the edited
+// string to the list of samples. Stop when there are n distinct samples.
+func generateEdits(k int, n int) []string {
+	alphabet := []rune{'A', 'ἑ', 'й', 'ლ', 'ô', 'Z', '1'}
+	seed := []rune{}
+	for len(seed) < k {
+		seed = append(seed, alphabet[rand.Intn(len(alphabet))])
 	}
+	seedStr := string(seed)
+	resultSet := map[string]bool{}
+	resultSet[seedStr] = true
+	results := []string{seedStr}
+	for len(results) < n {
+		sample := results[rand.Intn(len(results))]
+		runes, _ := stringToRunes(sample, len(sample))
+		if len(runes) == 0 {
+			continue
+		}
+		switch rand.Intn(3) {
+		case 0: // DELETE
+			i := rand.Intn(len(runes))
+			runes = append(runes[:i], runes[i+1:]...)
+		case 1: // INSERT
+			i, j := rand.Intn(len(runes)), rand.Intn(len(alphabet))
+			runes = append(append(runes[:i], alphabet[j]), runes[i:]...)
+		case 2: // SUBSTITUTE
+			i, j := rand.Intn(len(runes)), rand.Intn(len(alphabet))
+			runes = append(append(runes[:i], alphabet[j]), runes[i+1:]...)
+		}
+		edited := string(runes)
+		if !resultSet[edited] {
+			resultSet[edited] = true
+			results = append(results, edited)
+		}
+	}
+	return results
 }
 
-
-func TestSuggestExhaustive(t *testing.T) {
-	rand.Seed(0)
-	for i := 0; i < 100; i++ {
-		r := NewTree()
-		keys := map[string]bool{}
-		for j := 0; j < 10000; j++ {
-			s := randString(10)
-			keys[s] = true
-			r.Set(s, s)
-		}
-		haystack := []string{}
-		for k := range keys {
-			haystack := append(haystack, k)
+func filterByEditDistance(xs []string, s string, d int8) []KV {
+	results := []KV{}
+	for _, x := range xs {
+		if editDistance(x, s) <= d {
+			results = append(results, KV{key: x, value: x})
 		}
 	}
-	// TODO: exhaustive edit distance test using editDistance above...
-}*/
+	return results
+}
+
+func TestSuggestFuzz(t *testing.T) {
+	rand.Seed(0)
+	r := NewTree()
+	haystack := generateEdits(5, 1000)
+	for _, s := range haystack {
+		r.Set(s, s)
+	}
+	for dist := int8(0); dist < 5; dist++ {
+		needle := haystack[rand.Intn(len(haystack))]
+		results := keystr(r.Suggest(needle, dist, len(haystack)))
+		expected := keystr(filterByEditDistance(haystack, needle, dist))
+		if results != expected {
+			t.Errorf("When asking for strings edit distance %v away from %v, got:\n%v\nbut want:\n%v",
+				dist, needle, results, expected)
+		}
+	}
+}
 
 // TODO: benchmark that loads words file
