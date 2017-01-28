@@ -375,6 +375,7 @@ func TestSuggestSuffixesAfterExactPrefix(t *testing.T) {
 	}
 }
 
+// Returns the edit distance between s and t.
 func editDistance(s string, t string) int8 {
 	rs, _ := stringToRunes(s, len(s))
 	rt, _ := stringToRunes(t, len(t))
@@ -442,6 +443,7 @@ func generateEdits(k int, n int) []string {
 	return results
 }
 
+// Returns all strings in xs that are at most edit distance d from s.
 func filterByEditDistance(xs []string, s string, d int8) []KV {
 	results := []KV{}
 	for _, x := range xs {
@@ -469,5 +471,3 @@ func TestSuggestFuzz(t *testing.T) {
 		}
 	}
 }
-
-// TODO: benchmark that loads words file
