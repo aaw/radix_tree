@@ -1,47 +1,46 @@
-package radix_tree
+package levtrie
 
 import (
-	//	"fmt"
 	"math/rand"
 	"sort"
 	"strings"
 	"testing"
 )
 
-func expectGet(t *testing.T, r RadixTree, key string, val string) {
+func expectGet(t *testing.T, r Trie, key string, val string) {
 	if actual, ok := r.Get(key); ok && actual != val {
 		t.Errorf("Want val == \"%v\", ok. Got val == %v, ok == %v", val, actual, ok)
 	}
 }
 
-func expectNotGet(t *testing.T, r RadixTree, key string) {
+func expectNotGet(t *testing.T, r Trie, key string) {
 	if actual, ok := r.Get(key); ok {
 		t.Errorf("Want !ok. Got val == %v, ok == %v", actual, ok)
 	}
 }
 
 func TestGetEmpty(t *testing.T) {
-	r := NewTree()
+	r := New()
 	if _, ok := r.Get("foo"); ok {
 		t.Error("Want !ok, got ok")
 	}
 }
 
 func TestSetGet(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("foo", "bar")
 	expectGet(t, r, "foo", "bar")
 }
 
 func TestSetDelete(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("foo", "bar")
 	r.Delete("foo")
 	expectNotGet(t, r, "foo")
 }
 
 func TestSetSetDeleteDelete(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("foo", "bar")
 	r.Set("bar", "foo")
 	r.Delete("foo")
@@ -53,7 +52,7 @@ func TestSetSetDeleteDelete(t *testing.T) {
 }
 
 func TestSetSetSetDeleteDeleteDelete(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("foo", "bar")
 	r.Set("bar", "foo")
 	r.Set("baz", "biz")
@@ -72,7 +71,7 @@ func TestSetSetSetDeleteDeleteDelete(t *testing.T) {
 }
 
 func TestGetUnsuccessful(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
@@ -82,7 +81,7 @@ func TestGetUnsuccessful(t *testing.T) {
 }
 
 func TestDeleteUnsuccessful(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Delete("foo")
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
@@ -96,7 +95,7 @@ func TestDeleteUnsuccessful(t *testing.T) {
 }
 
 func TestSetAndGetCommonPrefix(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("fooey", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foozle", "barc")
@@ -107,7 +106,7 @@ func TestSetAndGetCommonPrefix(t *testing.T) {
 }
 
 func TestSetAndGetSubstrings(t *testing.T) {
-	r := NewTree()
+	r := New()
 	r.Set("fooingly", "bara")
 	r.Set("fooing", "barb")
 	r.Set("foo", "barc")
@@ -138,7 +137,7 @@ func TestSetGetDeleteMixedOrder(t *testing.T) {
 		"fooaaaaaaaa",
 	}
 	for i := 0; i < 1000; i++ {
-		r := NewTree()
+		r := New()
 		for j := 0; j < 10; j++ {
 			for _, k := range rand.Perm(len(data)) {
 				expectNotGet(t, r, data[k])
@@ -156,7 +155,7 @@ func TestSetGetDeleteMixedOrder(t *testing.T) {
 
 func TestSetAndGetExhaustive3ByteLowercaseEnglish(t *testing.T) {
 	var b [3]byte
-	r := NewTree()
+	r := New()
 	keys := make([]string, 0)
 	for i := 97; i < 123; i++ {
 		for j := 97; j < 123; j++ {
@@ -212,7 +211,7 @@ func TestSuggest(t *testing.T) {
 		"fooaaaaaaa",
 		"fooaaaaaaaa",
 	}
-	r := NewTree()
+	r := New()
 	var got, want string
 	unlimited := len(data) + 1
 	for _, key := range data {
@@ -279,7 +278,7 @@ func TestSuggestAfterExactPrefix(t *testing.T) {
 		"bbfoo",
 		"foo",
 	}
-	r := NewTree()
+	r := New()
 	var got, want string
 	unlimited := len(data) + 1
 	for _, key := range data {
@@ -313,7 +312,7 @@ func TestSuggestSuffixes(t *testing.T) {
 		"fooxx", "fooxxx", "fooxxxaaaaa", "fooz", "fox", "fx", "fxx", "gog",
 		"gogx", "gogy", "gogyy", "gogyyy",
 	}
-	r := NewTree()
+	r := New()
 	var got, want string
 	unlimited := len(data) + 1
 	for _, key := range data {
@@ -347,7 +346,7 @@ func TestSuggestSuffixesAfterExactPrefix(t *testing.T) {
 		"xyzfooxxxxxx", "xyzgo", "xyzgog", "xyzgogxxxxx", "xyzgoo", "xyzgooxxxx",
 		"xyzxxx", "xyzxxxxxxxxxx", "xyxfoo",
 	}
-	r := NewTree()
+	r := New()
 	var got, want string
 	unlimited := len(data) + 1
 	for _, key := range data {
@@ -456,7 +455,7 @@ func filterByEditDistance(xs []string, s string, d int8) []KV {
 
 func TestSuggestFuzz(t *testing.T) {
 	rand.Seed(0)
-	r := NewTree()
+	r := New()
 	haystack := generateEdits(5, 5000)
 	for _, s := range haystack {
 		r.Set(s, s)

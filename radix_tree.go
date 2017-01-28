@@ -1,10 +1,10 @@
-package radix_tree
+package levtrie
 
 import (
 	"unicode/utf8"
 )
 
-type RadixTree struct {
+type Trie struct {
 	root *node
 }
 
@@ -13,6 +13,7 @@ type KV struct {
 	value string
 }
 
+// A Trie node.
 type node struct {
 	child map[rune]*node
 	data  *KV
@@ -22,8 +23,8 @@ func newNode() *node {
 	return &node{child: make(map[rune]*node)}
 }
 
-func NewTree() RadixTree {
-	return RadixTree{root: newNode()}
+func New() Trie {
+	return Trie{root: newNode()}
 }
 
 // Read at most the first n runes from the string, return those
@@ -41,7 +42,7 @@ func stringToRunes(s string, n int) ([]rune, string) {
 	return rs, ""
 }
 
-func (t *RadixTree) Get(key string) (string, bool) {
+func (t *Trie) Get(key string) (string, bool) {
 	n := t.root
 	var ok bool
 	runes, _ := stringToRunes(key, len(key))
@@ -57,7 +58,7 @@ func (t *RadixTree) Get(key string) (string, bool) {
 	}
 }
 
-func (t *RadixTree) Set(key string, val string) {
+func (t *Trie) Set(key string, val string) {
 	n := t.root
 	runes, _ := stringToRunes(key, len(key))
 	for _, r := range runes {
@@ -74,7 +75,7 @@ func (t *RadixTree) Set(key string, val string) {
 }
 
 // TODO: clean up unused paths here?
-func (t *RadixTree) Delete(key string) {
+func (t *Trie) Delete(key string) {
 	n := t.root
 	var ok bool
 	runes, _ := stringToRunes(key, len(key))
@@ -183,15 +184,15 @@ func (x doNotExpandSuffixes) keepGoingAfterAccept() bool { return true }
 
 func (x expandSuffixes) keepGoingAfterAccept() bool { return false }
 
-func (t RadixTree) Suggest(key string, d int8, n int) []KV {
+func (t Trie) Suggest(key string, d int8, n int) []KV {
 	return suggest(doNotExpandSuffixes{}, t.root, key, d, n)
 }
 
-func (t RadixTree) SuggestSuffixes(key string, d int8, n int) []KV {
+func (t Trie) SuggestSuffixes(key string, d int8, n int) []KV {
 	return suggest(expandSuffixes{}, t.root, key, d, n)
 }
 
-func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
+func (t Trie) SuggestAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
 	var ok bool
 	curr := t.root
@@ -203,7 +204,7 @@ func (t RadixTree) SuggestAfterExactPrefix(key string, np int, d int8, n int) []
 	return suggest(doNotExpandSuffixes{}, curr, s, d, n)
 }
 
-func (t RadixTree) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
+func (t Trie) SuggestSuffixesAfterExactPrefix(key string, np int, d int8, n int) []KV {
 	runes, s := stringToRunes(key, np)
 	var ok bool
 	curr := t.root

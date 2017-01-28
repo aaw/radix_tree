@@ -1,4 +1,4 @@
-package radix_tree
+package levtrie
 
 import (
 	"bufio"
@@ -62,7 +62,7 @@ func ensureWords() {
 
 func benchmarkSuggest(d int, b *testing.B) {
 	ensureWords()
-	r := NewTree()
+	r := New()
 	for _, word := range words {
 		r.Set(word, word)
 	}
@@ -74,7 +74,7 @@ func benchmarkSuggest(d int, b *testing.B) {
 
 func benchmarkSuggestAfterExactPrefix(d int, p int, b *testing.B) {
 	ensureWords()
-	r := NewTree()
+	r := New()
 	for _, word := range words {
 		r.Set(word, word)
 	}
@@ -147,7 +147,7 @@ func BenchmarkSuggestAfterLength2PrefixTopTenDistance5(b *testing.B) {
 func BenchmarkRadixTreeSet(b *testing.B) {
 	ensureData(b.N)
 	b.ResetTimer()
-	r := NewTree()
+	r := New()
 	for i := 0; i < b.N; i++ {
 		r.Set(data[i], data[i])
 	}
@@ -164,7 +164,7 @@ func BenchmarkMapSet(b *testing.B) {
 
 func BenchmarkRadixTreeGet(b *testing.B) {
 	ensureData(b.N)
-	r := NewTree()
+	r := New()
 	for i := 0; i < b.N; i++ {
 		r.Set(data[i], data[i])
 	}
@@ -188,7 +188,7 @@ func BenchmarkMapGet(b *testing.B) {
 
 func BenchmarkRadixTreeDelete(b *testing.B) {
 	ensureData(b.N)
-	r := NewTree()
+	r := New()
 	for i := 0; i < b.N; i++ {
 		r.Set(data[i], data[i])
 	}
