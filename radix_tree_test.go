@@ -457,17 +457,17 @@ func filterByEditDistance(xs []string, s string, d int8) []KV {
 func TestSuggestFuzz(t *testing.T) {
 	rand.Seed(0)
 	r := NewTree()
-	haystack := generateEdits(5, 1000)
+	haystack := generateEdits(5, 5000)
 	for _, s := range haystack {
 		r.Set(s, s)
 	}
-	for dist := int8(0); dist < 5; dist++ {
+	for dist := int8(0); dist < 6; dist++ {
 		needle := haystack[rand.Intn(len(haystack))]
 		results := keystr(r.Suggest(needle, dist, len(haystack)))
 		expected := keystr(filterByEditDistance(haystack, needle, dist))
 		if results != expected {
-			t.Errorf("When asking for strings edit distance %v away from %v, got:\n%v\nbut want:\n%v",
-				dist, needle, results, expected)
+			t.Errorf("When asking for strings edit distance %v away from %v,"+
+				"got:\n%v\nbut want:\n%v", dist, needle, results, expected)
 		}
 	}
 }
